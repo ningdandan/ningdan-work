@@ -10,6 +10,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
   <style>
+    @font-face {
+      font-family: "Offset TM";
+      src: url("fonts/OffsetTM.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
     :root {
       --ink: #f7f3ec;
       --ink-soft: rgba(247, 243, 236, 0.78);
@@ -17,6 +25,7 @@
       --glass-border: rgba(255, 255, 255, 0.22);
       --accent: #ffe0b8;
       --focus: rgba(255, 224, 184, 0.55);
+      --display: "Offset TM", "Instrument Serif", serif;
       /* Matched from video edge / studio blue — edited by BG color controller */
       --video-blue: #6eb3f5;
     }
@@ -32,7 +41,7 @@
       overflow: hidden;
       background: var(--video-blue);
       color: var(--ink);
-      font-family: "DM Sans", sans-serif;
+      font-family: var(--display);
       cursor: default;
       -webkit-font-smoothing: antialiased;
     }
@@ -89,11 +98,12 @@
       left: 0;
       right: 0;
       z-index: 6;
-      font-family: "Instrument Serif", serif;
+      font-family: var(--display);
       font-size: clamp(0.95rem, 1.8vw, 1.2rem);
-      letter-spacing: 0.02em;
+      letter-spacing: 0.1em;
       line-height: 1;
       text-align: center;
+      text-transform: lowercase;
       opacity: 0;
       animation: rise-in 1s ease 0.15s forwards;
       text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
@@ -117,14 +127,17 @@
     }
 
     .greeting {
-      font-family: "Instrument Serif", serif;
-      font-size: clamp(1.75rem, 4.5vw, 2.85rem);
+      font-family: var(--display);
+      font-size: clamp(1.45rem, 3.6vw, 2.25rem);
       font-weight: 400;
       line-height: 1.15;
-      letter-spacing: -0.01em;
+      letter-spacing: 0.1em;
+      text-transform: lowercase;
       text-shadow: 0 2px 28px rgba(0, 0, 0, 0.55);
       opacity: 0;
       animation: rise-in 1s ease 0.35s forwards;
+      white-space: nowrap;
+      max-width: 96vw;
     }
 
     .greeting em {
@@ -170,7 +183,7 @@
       background: transparent;
       color: var(--ink);
       font-family: inherit;
-      font-size: clamp(0.95rem, 2.2vw, 1.05rem);
+      font-size: clamp(0.85rem, 1.9vw, 0.95rem);
       font-weight: 400;
       line-height: 1.4;
     }
@@ -205,7 +218,7 @@
     }
 
     .prompt-ghost-text {
-      font-size: clamp(0.95rem, 2.2vw, 1.05rem);
+      font-size: clamp(0.85rem, 1.9vw, 0.95rem);
       font-weight: 400;
       line-height: 1.4;
       letter-spacing: 0.01em;
@@ -284,12 +297,13 @@
       backdrop-filter: blur(14px) saturate(1.15);
       -webkit-backdrop-filter: blur(14px) saturate(1.15);
       color: var(--ink);
-      font-family: inherit;
-      font-size: clamp(0.78rem, 1.7vw, 0.88rem);
-      font-weight: 500;
-      letter-spacing: 0.01em;
+      font-family: var(--display);
+      font-size: clamp(0.72rem, 1.5vw, 0.85rem);
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: lowercase;
       line-height: 1.2;
-      padding: 0.55rem 0.95rem;
+      padding: 0.5rem 0.85rem;
       border-radius: 999px;
       cursor: pointer;
       white-space: nowrap;
@@ -568,6 +582,7 @@
       overflow: hidden;
       pointer-events: auto;
       color: #2a241c;
+      letter-spacing: 0.05em;
       animation: chat-panel-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
@@ -606,6 +621,101 @@
       color: #2a241c;
       border: 1px solid rgba(255, 255, 255, 0.95);
       border-bottom-right-radius: 0.35rem;
+    }
+
+    .chat-media-row {
+      align-self: stretch;
+      display: flex;
+      gap: 0.55rem;
+      overflow-x: auto;
+      padding: 0.15rem 0 0.35rem;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      animation: rise-in 0.35s ease;
+    }
+
+    .chat-media-row::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .chat-media-row::-webkit-scrollbar-thumb {
+      background: rgba(42, 36, 28, 0.25);
+      border-radius: 999px;
+    }
+
+    .chat-media-thumb {
+      appearance: none;
+      flex: 0 0 auto;
+      width: clamp(7.5rem, 28vw, 9.5rem);
+      aspect-ratio: 3 / 4;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: 0.85rem;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.35);
+      cursor: pointer;
+      scroll-snap-align: start;
+      position: relative;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .chat-media-thumb:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(40, 60, 90, 0.2);
+    }
+
+    .chat-media-thumb video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+
+    .chat-media-thumb::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(20, 24, 32, 0.28), transparent 45%);
+      pointer-events: none;
+    }
+
+    .media-lightbox {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(1rem, 4vw, 2rem);
+      background: rgba(18, 18, 18, 0.9);
+      cursor: pointer;
+    }
+
+    .media-lightbox.is-open {
+      display: flex;
+    }
+
+    .media-lightbox-frame {
+      position: relative;
+      width: min(96vw, 56rem);
+      max-height: 92dvh;
+      border: 0;
+      border-radius: 0;
+      overflow: visible;
+      background: transparent;
+      box-shadow: none;
+      cursor: default;
+    }
+
+    .media-lightbox-frame video {
+      display: block;
+      width: 100%;
+      max-height: 92dvh;
+      height: auto;
+      object-fit: contain;
+      background: transparent;
+      pointer-events: none;
     }
 
     .chat-composer {
@@ -725,11 +835,6 @@
         width: min(96vw, 44rem);
         gap: 0.95rem;
       }
-
-      .action-pill {
-        white-space: normal;
-        text-wrap: balance;
-      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -808,7 +913,7 @@
     }
 
     .bg-panel h2 {
-      font-family: "Instrument Serif", serif;
+      font-family: var(--display);
       font-size: 1.15rem;
       font-weight: 400;
       letter-spacing: 0.01em;
@@ -1003,10 +1108,10 @@
         </button>
       </form>
       <nav class="actions" aria-label="Quick actions">
-        <button type="button" class="action-pill" data-action="cv">View CV</button>
-        <button type="button" class="action-pill" data-action="salesforce">Agentic AI at Salesforce</button>
-        <button type="button" class="action-pill" data-action="side-project">Side Project</button>
-        <button type="button" class="action-pill" data-action="about">About Me</button>
+        <button type="button" class="action-pill" data-action="cv">view cv</button>
+        <button type="button" class="action-pill" data-action="salesforce">agentic ai at salesforce</button>
+        <button type="button" class="action-pill" data-action="side-project">side project</button>
+        <button type="button" class="action-pill" data-action="about">about me</button>
       </nav>
     </div>
 
@@ -1079,6 +1184,12 @@
         </form>
       </div>
     </div>
+
+    <div class="media-lightbox" id="mediaLightbox" aria-hidden="true">
+      <div class="media-lightbox-frame">
+        <video id="mediaLightboxVideo" muted playsinline loop preload="metadata"></video>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -1104,8 +1215,11 @@
     const chatMessages = document.getElementById("chatMessages");
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
+    const mediaLightbox = document.getElementById("mediaLightbox");
+    const mediaLightboxVideo = document.getElementById("mediaLightboxVideo");
 
     let chatOpen = false;
+    let mediaLightboxOpen = false;
 
     const bgMusic = new Audio(MUSIC_AUDIO);
     bgMusic.preload = "auto";
@@ -1662,7 +1776,7 @@
 
     stage.addEventListener("pointerdown", (e) => {
       if (chatOpen) return;
-      if (e.target.closest(".bg-panel, .bg-toggle, .actions, .prompt, .socials, .chat")) return;
+      if (e.target.closest(".bg-panel, .bg-toggle, .actions, .prompt, .socials, .chat, .media-lightbox")) return;
       onInteract();
     });
 
@@ -1673,6 +1787,10 @@
       if (document.activeElement === bgColorHex) return;
 
       if (e.key === "Escape") {
+        if (mediaLightboxOpen) {
+          closeMediaLightbox();
+          return;
+        }
         if (chatOpen) {
           closeChat();
           return;
@@ -1693,13 +1811,28 @@
       onInteract();
     });
 
+    const ABOUT_VIDEOS = [
+      "about/IMG_5214 3.mov",
+      "about/IMG_5221.mov",
+      "about/IMG_5229.mov",
+      "about/IMG_5230.mov",
+      "about/about me .mov",
+    ];
+
     const CHAT_REPLIES = {
       cv: "Here’s a quick look at my path — Lead Product Designer at Salesforce, focused on agentic enterprise tools, self-service, and systems that help teams move faster. Want a PDF resume or a deeper walkthrough of a specific chapter?",
       salesforce: "At Salesforce I’ve been designing agentic experiences across Service Cloud — self-service, workforce management, knowledge, and automation. Happy to dig into a product story, the design process, or how we ship AI that feels trustworthy.",
       "side-project": "Outside work I explore tangible craft, electronic music, VJing, and 3D experiments. Side projects are where I play with new tools and weird ideas. Curious about a specific one?",
-      about: "I’m Ningdan — UX designer based in Brooklyn. Half my time is agentic B2B SaaS; the other half is craft, music, and making strange little worlds. What would you like to know?",
+      about: [
+        "I’m Ningdan — UX designer based in Brooklyn. Half my time is agentic B2B SaaS; the other half is craft, music, and making strange little worlds.",
+        "I recently hosted my first art show in NYC, at NYU ITP! Here are pictures of my works:",
+      ],
       default: "Hey — I’m Ningdan’s homepage agent. Ask about Salesforce work, side projects, or how I design. What are you curious about?",
     };
+
+    function mediaSrc(path) {
+      return path.split("/").map(encodeURIComponent).join("/");
+    }
 
     function appendChatBubble(text, who) {
       const bubble = document.createElement("div");
@@ -1707,16 +1840,97 @@
       bubble.textContent = text;
       chatMessages.appendChild(bubble);
       chatMessages.scrollTop = chatMessages.scrollHeight;
+      return bubble;
+    }
+
+    function appendAboutMediaRow() {
+      const row = document.createElement("div");
+      row.className = "chat-media-row";
+      row.setAttribute("role", "list");
+
+      ABOUT_VIDEOS.forEach((path) => {
+        const src = mediaSrc(path);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "chat-media-thumb";
+        btn.setAttribute("role", "listitem");
+        btn.setAttribute("aria-label", "Play artwork video");
+
+        const vid = document.createElement("video");
+        vid.src = src;
+        vid.muted = true;
+        vid.playsInline = true;
+        vid.preload = "metadata";
+        vid.setAttribute("muted", "");
+        vid.setAttribute("playsinline", "");
+
+        btn.appendChild(vid);
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openMediaLightbox(src);
+        });
+        row.appendChild(btn);
+      });
+
+      chatMessages.appendChild(row);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function openMediaLightbox(src) {
+      mediaLightboxOpen = true;
+      mediaLightbox.classList.add("is-open");
+      mediaLightbox.setAttribute("aria-hidden", "false");
+      mediaLightboxVideo.src = src;
+      mediaLightboxVideo.muted = true;
+      mediaLightboxVideo.currentTime = 0;
+      mediaLightboxVideo.play().catch(() => {});
+    }
+
+    function closeMediaLightbox() {
+      mediaLightboxOpen = false;
+      mediaLightbox.classList.remove("is-open");
+      mediaLightbox.setAttribute("aria-hidden", "true");
+      mediaLightboxVideo.pause();
+      mediaLightboxVideo.removeAttribute("src");
+      mediaLightboxVideo.load();
+    }
+
+    function resolveChatAction(seed, action) {
+      if (action) return action;
+      const lower = (seed || "").toLowerCase();
+      if (lower.includes("cv") || lower.includes("resume")) return "cv";
+      if (lower.includes("salesforce") || lower.includes("agentic")) return "salesforce";
+      if (lower.includes("side") || lower.includes("project")) return "side-project";
+      if (lower.includes("about")) return "about";
+      return "default";
     }
 
     function botReplyFor(seed, action) {
-      if (action && CHAT_REPLIES[action]) return CHAT_REPLIES[action];
-      const lower = (seed || "").toLowerCase();
-      if (lower.includes("cv") || lower.includes("resume")) return CHAT_REPLIES.cv;
-      if (lower.includes("salesforce") || lower.includes("agentic")) return CHAT_REPLIES.salesforce;
-      if (lower.includes("side") || lower.includes("project")) return CHAT_REPLIES["side-project"];
-      if (lower.includes("about")) return CHAT_REPLIES.about;
-      return CHAT_REPLIES.default;
+      const key = resolveChatAction(seed, action);
+      const reply = CHAT_REPLIES[key] || CHAT_REPLIES.default;
+      return reply;
+    }
+
+    function deliverBotReply(seed, action) {
+      const key = resolveChatAction(seed, action);
+      const reply = botReplyFor(seed, action);
+
+      if (Array.isArray(reply)) {
+        reply.forEach((line, i) => {
+          window.setTimeout(() => {
+            appendChatBubble(line, "bot");
+            if (key === "about" && i === reply.length - 1) {
+              appendAboutMediaRow();
+            }
+            chatInput.focus();
+          }, 280 + i * 420);
+        });
+        return;
+      }
+
+      appendChatBubble(reply, "bot");
+      if (key === "about") appendAboutMediaRow();
+      chatInput.focus();
     }
 
     function openChat(seedText, action) {
@@ -1729,12 +1943,12 @@
       if (userText) appendChatBubble(userText, "user");
 
       window.setTimeout(() => {
-        appendChatBubble(botReplyFor(userText, action), "bot");
-        chatInput.focus();
+        deliverBotReply(userText, action);
       }, 280);
     }
 
     function closeChat() {
+      closeMediaLightbox();
       chatOpen = false;
       stage.classList.remove("is-chat");
       chat.setAttribute("aria-hidden", "true");
@@ -1748,6 +1962,15 @@
     });
 
     chat.addEventListener("pointerdown", (e) => e.stopPropagation());
+
+    mediaLightbox.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeMediaLightbox();
+    });
+
+    mediaLightbox.querySelector(".media-lightbox-frame")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
 
     document.querySelectorAll(".action-pill").forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -1772,7 +1995,7 @@
       appendChatBubble(q, "user");
       chatInput.value = "";
       window.setTimeout(() => {
-        appendChatBubble(botReplyFor(q, null), "bot");
+        deliverBotReply(q, null);
       }, 420);
     });
 
