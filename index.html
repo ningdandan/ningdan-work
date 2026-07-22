@@ -2,32 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>ningdan.work</title>
   <link rel="icon" href="favicon.png" type="image/png" />
   <link rel="apple-touch-icon" href="favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
-    @font-face {
-      font-family: "Offset TM";
-      src: url("fonts/OffsetTM.ttf") format("truetype");
-      font-weight: 400;
-      font-style: normal;
-      font-display: swap;
-    }
-
     :root {
       --ink: #f7f3ec;
       --ink-soft: rgba(247, 243, 236, 0.78);
       --glass: rgba(12, 10, 8, 0.38);
       --glass-border: rgba(255, 255, 255, 0.22);
-      --accent: #ffe0b8;
-      --focus: rgba(255, 224, 184, 0.55);
-      --display: "Offset TM", "Instrument Serif", serif;
+      --accent: #ff6b52;
+      --focus: rgba(255, 107, 82, 0.55);
+      --display: "Space Grotesk", system-ui, sans-serif;
       /* Matched from video edge / studio blue — edited by BG color controller */
       --video-blue: #6eb3f5;
+    }
+
+    @property --prompt-angle {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: 0deg;
     }
 
     * {
@@ -55,13 +53,26 @@
       background: var(--video-blue);
     }
 
+    .video-stack {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      translate: -50% 0;
+      height: 100%;
+      width: min(100%, calc(100dvh * 592 / 672));
+      aspect-ratio: 592 / 672;
+      max-width: 100%;
+      overflow: hidden;
+      z-index: 0;
+    }
+
     .video-layer {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
-      /* Full window height on wide screens; blue fills left/right gaps */
-      object-fit: contain;
+      object-fit: cover;
       object-position: center center;
       pointer-events: none;
       z-index: 0;
@@ -71,6 +82,21 @@
 
     .video-layer.is-active {
       z-index: 1;
+    }
+
+    /* Soft L/R blend on the video frame so edges melt into the page bg */
+    .video-blend {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: linear-gradient(
+        to right,
+        var(--video-blue) 0%,
+        transparent 14%,
+        transparent 86%,
+        var(--video-blue) 100%
+      );
     }
 
     /* Soft veil only around UI — face stays clear */
@@ -90,6 +116,23 @@
           rgba(30, 70, 140, 0.28) 0%,
           transparent 26%
         );
+      transition: background 0.45s ease;
+    }
+
+    .stage.is-music .veil {
+      background:
+        radial-gradient(
+          ellipse 48% 40% at 50% 58%,
+          rgba(80, 16, 16, 0.4) 0%,
+          rgba(80, 16, 16, 0.14) 45%,
+          transparent 72%
+        ),
+        linear-gradient(
+          to top,
+          rgba(180, 24, 28, 0.42) 0%,
+          rgba(140, 16, 20, 0.18) 14%,
+          transparent 28%
+        );
     }
 
     .brand {
@@ -99,9 +142,9 @@
       right: 0;
       z-index: 6;
       font-family: var(--display);
-      font-size: clamp(0.95rem, 1.8vw, 1.2rem);
-      letter-spacing: 0.1em;
-      line-height: 1;
+      font-size: clamp(0.6rem, 1.15vw, 0.75rem);
+      letter-spacing: normal;
+      line-height: normal;
       text-align: center;
       text-transform: lowercase;
       opacity: 0;
@@ -130,8 +173,8 @@
       font-family: var(--display);
       font-size: clamp(1.45rem, 3.6vw, 2.25rem);
       font-weight: 400;
-      line-height: 1.15;
-      letter-spacing: 0.1em;
+      line-height: normal;
+      letter-spacing: normal;
       text-transform: lowercase;
       text-shadow: 0 2px 28px rgba(0, 0, 0, 0.55);
       opacity: 0;
@@ -140,12 +183,18 @@
       max-width: 96vw;
     }
 
+    .greeting-line {
+      display: inline;
+    }
+
     .greeting em {
       font-style: italic;
       color: var(--accent);
     }
 
     .prompt {
+      position: relative;
+      isolation: isolate;
       width: min(100%, 34rem);
       display: flex;
       align-items: center;
@@ -160,16 +209,89 @@
       opacity: 0;
       animation: rise-in 1s ease 0.55s forwards, glow-pulse 4.5s ease-in-out 1.6s infinite;
       pointer-events: auto;
-      transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+      transition:
+        border-color 0.3s ease,
+        box-shadow 0.35s ease,
+        transform 0.25s ease,
+        background 0.35s ease;
+    }
+
+    .prompt::before,
+    .prompt::after {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    /* Clockwise scanning energy ring */
+    .prompt::before {
+      z-index: 2;
+      padding: 2px;
+      background: conic-gradient(
+        from var(--prompt-angle),
+        transparent 0deg,
+        transparent 250deg,
+        rgba(255, 107, 82, 0.15) 280deg,
+        rgba(255, 160, 120, 0.75) 310deg,
+        #fff6ef 328deg,
+        var(--accent) 342deg,
+        rgba(255, 107, 82, 0.35) 352deg,
+        transparent 360deg
+      );
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      filter: drop-shadow(0 0 6px rgba(255, 107, 82, 0.85))
+        drop-shadow(0 0 14px rgba(255, 107, 82, 0.45));
+    }
+
+    /* Soft outer activated aura */
+    .prompt::after {
+      z-index: -1;
+      inset: -6px;
+      background: radial-gradient(
+        ellipse at 50% 50%,
+        rgba(255, 107, 82, 0.28) 0%,
+        rgba(255, 107, 82, 0.1) 42%,
+        transparent 72%
+      );
+      filter: blur(10px);
     }
 
     .prompt:focus-within {
-      border-color: var(--focus);
+      border-color: rgba(255, 107, 82, 0.7);
+      background: rgba(18, 10, 8, 0.52);
       box-shadow:
-        0 12px 40px rgba(0, 0, 0, 0.32),
-        0 0 0 3px rgba(232, 196, 160, 0.18);
+        0 12px 40px rgba(0, 0, 0, 0.36),
+        0 0 0 1px rgba(255, 107, 82, 0.28),
+        0 0 18px rgba(255, 107, 82, 0.2),
+        inset 0 0 14px rgba(255, 107, 82, 0.08);
       transform: translateY(-1px);
       animation: rise-in 1s ease 0.55s forwards;
+    }
+
+    .prompt:focus-within::before {
+      opacity: 1;
+      animation: prompt-scan 1.6s linear 2 forwards;
+    }
+
+    .prompt:focus-within::after {
+      opacity: 0.55;
+    }
+
+    .prompt:focus-within button {
+      background: var(--accent);
+      color: #1a0e0c;
+      box-shadow: 0 0 12px rgba(255, 107, 82, 0.45);
     }
 
     .prompt input {
@@ -185,7 +307,7 @@
       font-family: inherit;
       font-size: clamp(0.85rem, 1.9vw, 0.95rem);
       font-weight: 400;
-      line-height: 1.4;
+      line-height: normal;
     }
 
     .prompt input::placeholder {
@@ -220,8 +342,8 @@
     .prompt-ghost-text {
       font-size: clamp(0.85rem, 1.9vw, 0.95rem);
       font-weight: 400;
-      line-height: 1.4;
-      letter-spacing: 0.01em;
+      line-height: normal;
+      letter-spacing: normal;
       background-image: linear-gradient(
         105deg,
         rgba(247, 243, 236, 0.42) 0%,
@@ -245,8 +367,8 @@
       height: 1.05em;
       margin-left: 1px;
       border-radius: 1px;
-      background: rgba(255, 224, 184, 0.85);
-      box-shadow: 0 0 10px rgba(255, 224, 184, 0.45);
+      background: rgba(255, 107, 82, 0.85);
+      box-shadow: 0 0 10px rgba(255, 107, 82, 0.45);
       animation: caret-blink 1s steps(1, end) infinite;
     }
 
@@ -300,9 +422,9 @@
       font-family: var(--display);
       font-size: clamp(0.72rem, 1.5vw, 0.85rem);
       font-weight: 400;
-      letter-spacing: 0.1em;
+      letter-spacing: normal;
       text-transform: lowercase;
-      line-height: 1.2;
+      line-height: normal;
       padding: 0.5rem 0.85rem;
       border-radius: 999px;
       cursor: pointer;
@@ -458,15 +580,10 @@
       white-space: nowrap;
       font-size: 0.8rem;
       font-weight: 500;
-      letter-spacing: 0.02em;
+      letter-spacing: normal;
       line-height: 2.55rem;
       text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
       animation: music-roll 14s linear infinite;
-    }
-
-    .music-title:hover .music-marquee {
-      color: var(--accent);
-      animation-play-state: paused;
     }
 
     .music-marquee span {
@@ -582,7 +699,7 @@
       overflow: hidden;
       pointer-events: auto;
       color: #2a241c;
-      letter-spacing: 0.05em;
+      letter-spacing: normal;
       animation: chat-panel-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
@@ -602,7 +719,7 @@
       padding: 0.75rem 1rem;
       border-radius: 1.1rem;
       font-size: 0.95rem;
-      line-height: 1.45;
+      line-height: normal;
       text-align: left;
       animation: rise-in 0.35s ease;
     }
@@ -746,7 +863,7 @@
     }
 
     .chat-composer input:focus {
-      border-color: rgba(255, 224, 184, 0.95);
+      border-color: rgba(255, 107, 82, 0.95);
       background: rgba(255, 255, 255, 0.68);
     }
 
@@ -810,6 +927,12 @@
       }
     }
 
+    @keyframes prompt-scan {
+      to {
+        --prompt-angle: 360deg;
+      }
+    }
+
     @keyframes breathe {
       0%, 100% { opacity: 0.55; }
       50% { opacity: 1; }
@@ -826,6 +949,25 @@
     }
 
     @media (max-width: 640px) {
+      html, body {
+        height: 100svh;
+        min-height: 100svh;
+      }
+
+      .stage {
+        height: 100svh;
+        min-height: 100svh;
+      }
+
+      .video-stack {
+        top: auto;
+        bottom: 0;
+        height: auto;
+        width: 100%;
+        max-height: 100%;
+        translate: -50% 0;
+      }
+
       .video-layer {
         object-position: center bottom;
       }
@@ -834,6 +976,121 @@
         top: 35%;
         width: min(96vw, 44rem);
         gap: 0.95rem;
+      }
+
+      .greeting {
+        white-space: normal;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        line-height: 1.22;
+        gap: 0.12em;
+        max-width: 92vw;
+        font-size: clamp(1.2rem, 6.2vw, 1.65rem);
+      }
+
+      .greeting-line {
+        display: block;
+      }
+
+      /* Skip entrance fades — avoids blink on mobile refresh */
+      .brand,
+      .greeting,
+      .prompt,
+      .actions,
+      .socials {
+        opacity: 1;
+        animation: none;
+      }
+
+      .socials {
+        bottom: calc(2.25rem + env(safe-area-inset-bottom, 0px));
+        z-index: 12;
+        padding-bottom: 0.25rem;
+        overflow: visible;
+        flex-wrap: wrap;
+        row-gap: 0.45rem;
+      }
+
+      .socials a,
+      .music-btn {
+        position: relative;
+        z-index: 12;
+      }
+
+      /* Flatten so the title can wrap onto a second row under the icons */
+      .music-player {
+        display: contents;
+      }
+
+      .music-btn {
+        order: 3;
+      }
+
+      .music-title {
+        position: static;
+        left: auto;
+        right: auto;
+        top: auto;
+        transform: none;
+        order: 10;
+        flex: 0 0 0;
+        width: 0;
+        max-width: 0;
+        height: 0;
+        margin: 0;
+        padding: 0;
+        opacity: 0;
+        overflow: hidden;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        mask-image: none;
+        -webkit-mask-image: none;
+        pointer-events: none;
+      }
+
+      .music-player.is-playing .music-title {
+        flex: 0 0 100%;
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        opacity: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 0.05rem;
+        padding: 0;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+        pointer-events: auto;
+      }
+
+      .music-player.is-playing .music-marquee {
+        animation: none;
+        transform: none;
+        width: auto;
+        max-width: min(70vw, 13.5rem);
+        gap: 0;
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        box-shadow: none;
+        padding: 0;
+        line-height: 1.3;
+        font-size: 0.72rem;
+        text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
+      }
+
+      .music-player.is-playing .music-marquee span[aria-hidden="true"] {
+        display: none;
       }
     }
 
@@ -848,6 +1105,16 @@
         animation: none !important;
         opacity: 1;
         transition: none;
+      }
+
+      .prompt::before,
+      .prompt::after {
+        animation: none !important;
+      }
+
+      .prompt:focus-within::before,
+      .prompt:focus-within::after {
+        opacity: 1;
       }
 
       .prompt-ghost-text,
@@ -916,13 +1183,13 @@
       font-family: var(--display);
       font-size: 1.15rem;
       font-weight: 400;
-      letter-spacing: 0.01em;
+      letter-spacing: normal;
     }
 
     .bg-panel .sub {
       margin-top: -0.35rem;
       font-size: 0.72rem;
-      line-height: 1.35;
+      line-height: normal;
       color: var(--ink-soft);
     }
 
@@ -1020,7 +1287,7 @@
     .bg-status {
       min-height: 1.1rem;
       font-size: 0.7rem;
-      line-height: 1.35;
+      line-height: normal;
       color: var(--ink-soft);
     }
 
@@ -1035,21 +1302,24 @@
 </head>
 <body>
   <div class="stage" id="stage">
-    <video
-      class="video-layer is-active"
-      id="videoA"
-      muted
-      playsinline
-      autoplay
-      preload="auto"
-    ></video>
-    <video
-      class="video-layer"
-      id="videoB"
-      muted
-      playsinline
-      preload="none"
-    ></video>
+    <div class="video-stack">
+      <video
+        class="video-layer is-active"
+        id="videoA"
+        muted
+        playsinline
+        autoplay
+        preload="auto"
+      ></video>
+      <video
+        class="video-layer"
+        id="videoB"
+        muted
+        playsinline
+        preload="none"
+      ></video>
+      <div class="video-blend" aria-hidden="true"></div>
+    </div>
 
     <div class="veil" aria-hidden="true"></div>
 
@@ -1086,7 +1356,10 @@
     </div>
 
     <div class="center">
-      <h1 class="greeting">hi <span id="greetingPlace">there</span>, ready to chat <em>24/7</em></h1>
+      <h1 class="greeting">
+        <span class="greeting-line">hi <span id="greetingPlace">there</span>, </span>
+        <span class="greeting-line">ready to chat <em>24/7</em></span>
+      </h1>
       <form class="prompt" id="promptForm" autocomplete="off">
         <div class="prompt-field" id="promptField">
           <span class="prompt-ghost" id="promptGhost" aria-hidden="true">
@@ -1110,7 +1383,7 @@
       <nav class="actions" aria-label="Quick actions">
         <button type="button" class="action-pill" data-action="cv">view cv</button>
         <button type="button" class="action-pill" data-action="salesforce">agentic ai at salesforce</button>
-        <button type="button" class="action-pill" data-action="side-project">side project</button>
+        <button type="button" class="action-pill" data-action="vibecoding">vibecoding</button>
         <button type="button" class="action-pill" data-action="about">about me</button>
       </nav>
     </div>
@@ -1196,6 +1469,9 @@
     const VIDEOS = ["video1.mp4", "video2.mp4", "video3.mp4"];
     const MUSIC_VIDEO = "music.mp4";
     const MUSIC_AUDIO = "music.mp3";
+    const SLEEP_VIDEOS = ["sleep.mp4", "sleep2.mp4"];
+    const TYPING_VIDEO = "typing.mp4";
+    const IDLE_SLEEP_MS = 30000;
     const MUSIC_BG = "#000000";
     const BG_STORAGE_KEY = "aura-video-blue-v2";
     const BG_DEFAULT = "#6eb3f5";
@@ -1245,6 +1521,11 @@
     let preloadArmed = false;
     let musicMode = false;
     let bgBeforeMusic = null;
+    let sleepMode = false;
+    let sleepWakePending = false;
+    let sleepIndex = 0;
+    let typingMode = false;
+    let idleTimer = 0;
 
     function srcFor(i) {
       return VIDEOS[i];
@@ -1337,7 +1618,7 @@
     }
 
     function preloadOther(forceIndex) {
-      if (musicMode) return;
+      if (musicMode || sleepMode || typingMode) return;
       const next = forceIndex != null ? forceIndex : pickOtherIndex();
       if (preloadedIndex === next && inactive.getAttribute("src") === srcFor(next)) {
         return;
@@ -1347,7 +1628,7 @@
     }
 
     function maybePreloadFromProgress() {
-      if (musicMode || switching || preloadArmed) return;
+      if (musicMode || sleepMode || typingMode || switching || preloadArmed) return;
       const d = active.duration;
       if (!d || !isFinite(d)) return;
       /* Warm the next clip in the last ~35% so the cut stays seamless */
@@ -1358,7 +1639,7 @@
     }
 
     async function swapVideos() {
-      if (musicMode || switching) return;
+      if (musicMode || sleepMode || typingMode || switching) return;
       switching = true;
       const token = ++swapToken;
 
@@ -1392,7 +1673,7 @@
         unloadVideo(inactive);
       } catch (_) {
         /* Retry once with a fresh pick if preload failed */
-        if (token === swapToken && !musicMode) {
+        if (token === swapToken && !musicMode && !sleepMode && !typingMode) {
           preloadedIndex = null;
           preloadArmed = false;
           try {
@@ -1418,8 +1699,186 @@
       }
     }
 
+    function clearIdleTimer() {
+      window.clearTimeout(idleTimer);
+      idleTimer = 0;
+    }
+
+    function resetIdleTimer() {
+      clearIdleTimer();
+      if (musicMode || sleepMode || typingMode) return;
+      idleTimer = window.setTimeout(() => {
+        enterSleepMode();
+      }, IDLE_SLEEP_MS);
+    }
+
+    function pickOtherSleepIndex() {
+      if (SLEEP_VIDEOS.length < 2) return 0;
+      const options = [];
+      for (let i = 0; i < SLEEP_VIDEOS.length; i++) {
+        if (i !== sleepIndex) options.push(i);
+      }
+      return options[Math.floor(Math.random() * options.length)];
+    }
+
+    async function swapSleepVideos() {
+      if (!sleepMode || switching) return;
+      switching = true;
+      const token = ++swapToken;
+      const nextIndex = pickOtherSleepIndex();
+
+      try {
+        inactive.loop = false;
+        inactive.src = SLEEP_VIDEOS[nextIndex];
+        inactive.load();
+        await waitUntilReady(inactive, token);
+        if (token !== swapToken || !sleepMode) return;
+
+        inactive.currentTime = 0;
+        await playSafe(inactive);
+        if (token !== swapToken || !sleepMode) return;
+
+        /* Same hard cut as normal mode — edge blend stays on .video-stack */
+        inactive.classList.add("is-active");
+        active.classList.remove("is-active");
+        active.pause();
+
+        const prev = active;
+        active = inactive;
+        inactive = prev;
+        sleepIndex = nextIndex;
+
+        unloadVideo(inactive);
+      } catch (_) {
+        if (token === swapToken && sleepMode) {
+          try {
+            active.currentTime = 0;
+            await playSafe(active);
+          } catch (_) {}
+        }
+      } finally {
+        if (token === swapToken) switching = false;
+      }
+    }
+
+    async function enterSleepMode() {
+      if (musicMode || sleepMode || typingMode) return;
+      sleepMode = true;
+      sleepWakePending = false;
+      clearIdleTimer();
+      swapToken += 1;
+      switching = false;
+      preloadedIndex = null;
+      preloadArmed = false;
+
+      unloadVideo(inactive);
+      active.pause();
+      active.loop = false;
+      sleepIndex = Math.floor(Math.random() * SLEEP_VIDEOS.length);
+      active.src = SLEEP_VIDEOS[sleepIndex];
+      active.load();
+
+      try {
+        await waitForCanPlay(active);
+        if (!sleepMode) return;
+        active.currentTime = 0;
+        await playSafe(active);
+      } catch (_) {
+        sleepMode = false;
+        resetIdleTimer();
+      }
+    }
+
+    function requestWakeFromSleep() {
+      if (!sleepMode) return;
+      exitSleepMode();
+    }
+
+    async function exitSleepMode() {
+      if (!sleepMode) return;
+      sleepMode = false;
+      sleepWakePending = false;
+      swapToken += 1;
+      switching = false;
+      preloadedIndex = null;
+      preloadArmed = false;
+      unloadVideo(inactive);
+
+      active.loop = false;
+      index = Math.floor(Math.random() * VIDEOS.length);
+      loadInto(active, index);
+      try {
+        await waitForCanPlay(active);
+        active.currentTime = 0;
+        await playSafe(active);
+      } catch (_) {}
+      resetIdleTimer();
+    }
+
+    /** Focus mode: loop typing.mp4 while composing in the prompt */
+    async function enterTypingMode() {
+      if (typingMode || musicMode) return;
+      if (sleepMode) {
+        sleepMode = false;
+        sleepWakePending = false;
+      }
+      typingMode = true;
+      clearIdleTimer();
+      swapToken += 1;
+      switching = false;
+      preloadedIndex = null;
+      preloadArmed = false;
+
+      unloadVideo(inactive);
+      active.pause();
+      active.loop = true;
+      active.src = TYPING_VIDEO;
+      active.load();
+
+      try {
+        await waitForCanPlay(active);
+        if (!typingMode) return;
+        active.currentTime = 0;
+        await playSafe(active);
+      } catch (_) {
+        typingMode = false;
+        resetIdleTimer();
+      }
+    }
+
+    async function exitTypingMode() {
+      if (!typingMode) return;
+      typingMode = false;
+      if (musicMode) return;
+
+      swapToken += 1;
+      switching = false;
+      preloadedIndex = null;
+      preloadArmed = false;
+      unloadVideo(inactive);
+
+      active.loop = false;
+      index = Math.floor(Math.random() * VIDEOS.length);
+      loadInto(active, index);
+      try {
+        await waitForCanPlay(active);
+        active.currentTime = 0;
+        await playSafe(active);
+      } catch (_) {}
+      resetIdleTimer();
+    }
+
+    function noteUserActivity() {
+      if (sleepMode) {
+        requestWakeFromSleep();
+        return;
+      }
+      if (typingMode) return;
+      resetIdleTimer();
+    }
+
     function onInteract() {
-      if (musicMode || chatOpen) return;
+      if (musicMode || sleepMode || typingMode || chatOpen) return;
       /* Pick a different upcoming clip without thrashing loads every click */
       const next = pickOtherIndex();
       if (preloadedIndex !== next) {
@@ -1434,19 +1893,30 @@
     }
 
     function onEnded() {
-      if (musicMode) return;
+      if (musicMode || typingMode) return;
+      if (sleepMode) {
+        swapSleepVideos();
+        return;
+      }
       /* Always advance to a different random clip — never loop the same one */
       swapVideos();
     }
 
     function setMusicButton(playing) {
       musicPlayer.classList.toggle("is-playing", playing);
+      stage.classList.toggle("is-music", playing);
       musicBtn.setAttribute("aria-label", playing ? "Pause music" : "Play music");
       musicBtn.title = playing ? "Pause music" : "Play music";
     }
 
     async function startMusicMode() {
       if (musicMode) return;
+      if (sleepMode) {
+        sleepMode = false;
+        sleepWakePending = false;
+      }
+      if (typingMode) typingMode = false;
+      clearIdleTimer();
       musicMode = true;
       swapToken += 1;
       switching = false;
@@ -1509,6 +1979,7 @@
         active.currentTime = 0;
         await playSafe(active);
       } catch (_) {}
+      resetIdleTimer();
     }
 
     musicBtn.addEventListener("click", (e) => {
@@ -1764,6 +2235,10 @@
     loadInto(active, index);
     unloadVideo(inactive);
     playSafe(active);
+    resetIdleTimer();
+
+    window.addEventListener("pointerdown", noteUserActivity, true);
+    window.addEventListener("keydown", noteUserActivity, true);
 
     [videoA, videoB].forEach((v) => {
       v.addEventListener("ended", () => {
@@ -1822,12 +2297,12 @@
     const CHAT_REPLIES = {
       cv: "Here’s a quick look at my path — Lead Product Designer at Salesforce, focused on agentic enterprise tools, self-service, and systems that help teams move faster. Want a PDF resume or a deeper walkthrough of a specific chapter?",
       salesforce: "At Salesforce I’ve been designing agentic experiences across Service Cloud — self-service, workforce management, knowledge, and automation. Happy to dig into a product story, the design process, or how we ship AI that feels trustworthy.",
-      "side-project": "Outside work I explore tangible craft, electronic music, VJing, and 3D experiments. Side projects are where I play with new tools and weird ideas. Curious about a specific one?",
+      vibecoding: "Outside work I explore tangible craft, electronic music, VJing, and 3D experiments. Vibecoding is where I play with new tools and weird ideas. Curious about a specific one?",
       about: [
         "I’m Ningdan — UX designer based in Brooklyn. Half my time is agentic B2B SaaS; the other half is craft, music, and making strange little worlds.",
         "I recently hosted my first art show in NYC, at NYU ITP! Here are pictures of my works:",
       ],
-      default: "Hey — I’m Ningdan’s homepage agent. Ask about Salesforce work, side projects, or how I design. What are you curious about?",
+      default: "Hey — I’m Ningdan’s homepage agent. Ask about Salesforce work, vibecoding, or how I design. What are you curious about?",
     };
 
     function mediaSrc(path) {
@@ -1900,7 +2375,7 @@
       const lower = (seed || "").toLowerCase();
       if (lower.includes("cv") || lower.includes("resume")) return "cv";
       if (lower.includes("salesforce") || lower.includes("agentic")) return "salesforce";
-      if (lower.includes("side") || lower.includes("project")) return "side-project";
+      if (lower.includes("vibecod") || lower.includes("side") || lower.includes("project")) return "vibecoding";
       if (lower.includes("about")) return "about";
       return "default";
     }
@@ -1983,6 +2458,7 @@
       e.preventDefault();
       const q = promptInput.value.trim();
       if (!q) return;
+      exitTypingMode();
       openChat(q, null);
       promptInput.value = "";
       if (typeof syncGhostVisibility === "function") syncGhostVisibility();
@@ -2078,39 +2554,296 @@
       }
     }
 
-    promptInput.addEventListener("input", syncGhostVisibility);
+    promptInput.addEventListener("input", () => {
+      syncGhostVisibility();
+      if (promptInput.value.length > 0) enterTypingMode();
+    });
     promptInput.addEventListener("focus", syncGhostVisibility);
-    promptInput.addEventListener("blur", syncGhostVisibility);
+    promptInput.addEventListener("blur", () => {
+      syncGhostVisibility();
+      exitTypingMode();
+    });
+    promptForm.addEventListener("focusout", (e) => {
+      if (promptForm.contains(e.relatedTarget)) return;
+      exitTypingMode();
+    });
     syncGhostVisibility();
     startTypewriter();
 
-    /* Greet by place from visitor IP — neighbourhood/county for major cities */
+    /* Greet by place from visitor IP — detailed only for select metros */
     (async function greetByCity() {
       const placeEl = document.getElementById("greetingPlace");
       if (!placeEl) return;
 
-      const MAJOR_CITIES = new Set([
-        "new york", "new york city", "nyc", "los angeles", "chicago", "houston",
-        "phoenix", "philadelphia", "san antonio", "san diego", "dallas", "san jose",
-        "austin", "jacksonville", "san francisco", "seattle", "denver", "washington",
-        "washington dc", "boston", "nashville", "detroit", "portland", "las vegas",
-        "miami", "atlanta", "minneapolis", "tampa", "orlando", "brooklyn", "queens",
-        "manhattan", "toronto", "vancouver", "montreal", "london", "paris", "berlin",
-        "madrid", "barcelona", "rome", "amsterdam", "tokyo", "osaka", "seoul",
-        "singapore", "hong kong", "sydney", "melbourne", "mumbai", "delhi", "bangalore",
-        "bengaluru", "shanghai", "beijing", "shenzhen", "mexico city", "sao paulo",
-        "rio de janeiro", "buenos aires", "dubai", "istanbul", "cairo", "lagos",
+      const BAY_AREA_CITIES = new Set([
+        "san francisco", "oakland", "berkeley", "san jose", "palo alto", "menlo park",
+        "mountain view", "sunnyvale", "santa clara", "cupertino", "redwood city",
+        "san mateo", "burlingame", "daly city", "south san francisco", "fremont",
+        "hayward", "alameda", "richmond", "walnut creek", "concord", "livermore",
+        "pleasanton", "dublin", "san rafael", "mill valley", "sausalito", "belmont",
+        "foster city", "los altos", "los gatos", "campbell", "milpitas", "newark",
+        "union city", "san leandro", "emeryville", "albany", "el cerrito", "orinda",
+        "lafayette", "martinez", "antioch", "vallejo", "novato", "petaluma",
+        "half moon bay", "pacifica", "brisbane", "colma", "millbrae", "san bruno",
+        "atherton", "portola valley", "woodside", "saratoga", "castro valley",
+        "san carlos", "redwood shores", "east palo alto", "stanford", "piedmont",
+        "moraga", "danville", "san ramon", "tracy", "gilroy", "morgan hill",
+        "santa rosa", "napa", "fairfax", "corte madera", "larkspur", "tiburon",
+      ]);
+
+      const NYC_BOROUGHS = new Set([
+        "manhattan", "brooklyn", "queens", "bronx", "staten island",
+      ]);
+
+      const NYC_COUNTY_TO_BOROUGH = {
+        "new york": "Manhattan",
+        "kings": "Brooklyn",
+        "queens": "Queens",
+        "bronx": "Bronx",
+        "richmond": "Staten Island",
+      };
+
+      const LA_AREA_CITIES = new Set([
+        "los angeles", "west hollywood", "beverly hills", "santa monica",
+        "culver city", "pasadena", "glendale", "burbank", "inglewood",
+        "marina del rey", "el segundo", "manhattan beach", "hermosa beach",
+        "redondo beach", "torrance", "long beach", "compton", "downey",
+        "alhambra", "monterey park", "arcadia", "south pasadena", "san marino",
+        "venice", "echo park", "silver lake", "los feliz", "highland park",
+        "eagle rock", "glassell park", "atwater village", "boyle heights",
+        "lincoln heights", "chinatown", "downtown los angeles", "downtown la",
+        "dtla", "arts district", "little tokyo", "koreatown", "mid-wilshire",
+        "westwood", "brentwood", "pacific palisades", "malibu", "calabasas",
+        "studio city", "sherman oaks", "encino", "van nuys", "north hollywood",
+        "hollywood city", "century city", "hawthorne", "gardena", "lawndale",
+        "lomita", "palos verdes estates", "rancho palos verdes", "agoura hills",
+        "thousand oaks", "northridge", "reseda", "canoga park", "woodland hills",
+        "tarzana", "toluca lake", "westchester", "playa del rey", "playa vista",
+        "mar vista", "palms", "hollywood hills", "hollywood park", "hollywood heights",
+        "east los angeles", "hollywood village",
       ]);
 
       function cleanLabel(value) {
         return String(value || "")
           .replace(/\s+County$/i, "")
           .replace(/\s+Borough$/i, "")
+          .replace(/\s+District$/i, " Dist")
           .trim();
       }
 
-      function isMajorCity(name) {
-        return MAJOR_CITIES.has(String(name || "").trim().toLowerCase());
+      function norm(value) {
+        return String(value || "").trim().toLowerCase();
+      }
+
+      function titleCase(value) {
+        return String(value || "")
+          .split(/\s+/)
+          .map((w) => {
+            if (/^(la|sf|nyc|dtla)$/i.test(w)) return w.toUpperCase();
+            if (/^(and|of|the)$/i.test(w)) return w.toLowerCase();
+            return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+          })
+          .join(" ");
+      }
+
+      function prettySfNeighborhood(name) {
+        const n = norm(name)
+          .replace(/\bdistrict\b/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+        const aliases = {
+          mission: "Mission Dist",
+          "mission district": "Mission Dist",
+          "russian hill": "Russian Hill",
+          "nob hill": "Nob Hill",
+          "pacific heights": "Pacific Heights",
+          "marina district": "Marina Dist",
+          marina: "Marina Dist",
+          "castro district": "Castro",
+          castro: "Castro",
+          "haight-ashbury": "Haight-Ashbury",
+          haight: "Haight-Ashbury",
+          "sunset district": "Sunset Dist",
+          sunset: "Sunset Dist",
+          "richmond district": "Richmond Dist",
+          richmond: "Richmond Dist",
+          "financial district": "Financial Dist",
+          soma: "SoMa",
+          "south of market": "SoMa",
+          "north beach": "North Beach",
+          chinatown: "Chinatown",
+          "hayes valley": "Hayes Valley",
+          "noe valley": "Noe Valley",
+          potrero: "Potrero Hill",
+          "potrero hill": "Potrero Hill",
+          "bernal heights": "Bernal Heights",
+          excelsior: "Excelsior",
+          visitacion: "Visitacion Valley",
+          "visitacion valley": "Visitacion Valley",
+          "outer sunset": "Outer Sunset",
+          "inner sunset": "Inner Sunset",
+          "outer richmond": "Outer Richmond",
+          "inner richmond": "Inner Richmond",
+          "twin peaks": "Twin Peaks",
+          "glen park": "Glen Park",
+          dogpatch: "Dogpatch",
+          "mission bay": "Mission Bay",
+          "western addition": "Western Addition",
+          fillmore: "Fillmore",
+          "japantown": "Japantown",
+          "presidio heights": "Presidio Heights",
+          "cow hollow": "Cow Hollow",
+          "lower haight": "Lower Haight",
+          "upper market": "Upper Market",
+          "cole valley": "Cole Valley",
+          "diamond heights": "Diamond Heights",
+          "bayview": "Bayview",
+          hunters: "Hunters Point",
+          "hunters point": "Hunters Point",
+        };
+        if (aliases[n]) return aliases[n];
+        return titleCase(name);
+      }
+
+      function prettyLaPlace(name) {
+        const n = norm(name);
+        const aliases = {
+          "downtown": "Downtown LA",
+          "downtown los angeles": "Downtown LA",
+          "downtown la": "Downtown LA",
+          dtla: "Downtown LA",
+          "west hollywood": "West Hollywood",
+          "beverly hills": "Beverly Hills",
+          "santa monica": "Santa Monica",
+          "culver city": "Culver City",
+          hollywood: "Hollywood",
+          venice: "Venice",
+          "silver lake": "Silver Lake",
+          "echo park": "Echo Park",
+          "los feliz": "Los Feliz",
+          koreatown: "Koreatown",
+          "mid-wilshire": "Mid-Wilshire",
+          "westwood": "Westwood",
+          brentwood: "Brentwood",
+          "pacific palisades": "Pacific Palisades",
+          malibu: "Malibu",
+          "studio city": "Studio City",
+          "sherman oaks": "Sherman Oaks",
+          "north hollywood": "North Hollywood",
+          "arts district": "Arts District",
+          "little tokyo": "Little Tokyo",
+          "marina del rey": "Marina del Rey",
+          "playa vista": "Playa Vista",
+          "century city": "Century City",
+        };
+        if (aliases[n]) return aliases[n];
+        return titleCase(name);
+      }
+
+      async function reverseProps(lat, lon) {
+        const geoRes = await fetch(
+          `https://photon.komoot.io/reverse?lon=${encodeURIComponent(lon)}&lat=${encodeURIComponent(lat)}`
+        );
+        if (!geoRes.ok) return null;
+        const geo = await geoRes.json();
+        return geo && geo.features && geo.features[0] && geo.features[0].properties
+          ? geo.features[0].properties
+          : null;
+      }
+
+      function neighborhoodFrom(props) {
+        if (!props) return "";
+        return cleanLabel(
+          props.locality || props.district || props.suburb || props.neighbourhood || props.neighborhood || ""
+        );
+      }
+
+      function isBayArea(city, region) {
+        if (BAY_AREA_CITIES.has(norm(city))) return true;
+        const r = norm(region);
+        return r.includes("california") && BAY_AREA_CITIES.has(norm(city));
+      }
+
+      function isNyc(city, region) {
+        const c = norm(city);
+        if (NYC_BOROUGHS.has(c)) return true;
+        if (c === "new york" || c === "new york city" || c === "nyc") return true;
+        const r = norm(region);
+        return (r === "new york" || r === "ny") && NYC_BOROUGHS.has(c);
+      }
+
+      function isLaArea(city, region) {
+        const c = norm(city);
+        if (LA_AREA_CITIES.has(c)) return true;
+        const r = norm(region);
+        return (r.includes("california") || r === "ca") && LA_AREA_CITIES.has(c);
+      }
+
+      function isLondon(city, region, country) {
+        const c = norm(city);
+        if (c === "london" || c === "city of london") return true;
+        const r = norm(region);
+        const co = norm(country);
+        return (co === "gb" || co === "uk" || co.includes("united kingdom")) &&
+          (c.includes("london") || r.includes("london") || r.includes("greater london"));
+      }
+
+      function isBerlin(city, region, country) {
+        const c = norm(city);
+        if (c === "berlin") return true;
+        const r = norm(region);
+        const co = norm(country);
+        return (co === "de" || co.includes("germany") || co.includes("deutschland")) &&
+          (c === "berlin" || r === "berlin" || r.includes("berlin"));
+      }
+
+      function prettyBerlinPlace(name) {
+        const n = norm(name)
+          .replace(/^bezirk\s+/i, "")
+          .replace(/\s+ortsteil$/i, "")
+          .trim();
+        const aliases = {
+          kreuzberg: "Kreuzberg",
+          "friedrichshain-kreuzberg": "Kreuzberg",
+          friedrichshain: "Friedrichshain",
+          mitte: "Mitte",
+          "prenzlauer berg": "Prenzlauer Berg",
+          "prenzlauerberg": "Prenzlauer Berg",
+          neukolln: "Neukölln",
+          "neukölln": "Neukölln",
+          charlottenburg: "Charlottenburg",
+          "charlottenburg-wilmersdorf": "Charlottenburg",
+          wilmersdorf: "Wilmersdorf",
+          schoneberg: "Schöneberg",
+          "schöneberg": "Schöneberg",
+          "tempelhof-schoneberg": "Schöneberg",
+          "tempelhof-schöneberg": "Schöneberg",
+          tempelhof: "Tempelhof",
+          wedding: "Wedding",
+          moabit: "Moabit",
+          pankow: "Pankow",
+          spandau: "Spandau",
+          steglitz: "Steglitz",
+          "steglitz-zehlendorf": "Steglitz",
+          zehlendorf: "Zehlendorf",
+          treptow: "Treptow",
+          "treptow-kopenick": "Treptow",
+          "treptow-köpenick": "Treptow",
+          kopenick: "Köpenick",
+          "köpenick": "Köpenick",
+          lichtenberg: "Lichtenberg",
+          marzahn: "Marzahn",
+          "marzahn-hellersdorf": "Marzahn",
+          hellersdorf: "Hellersdorf",
+          reinickendorf: "Reinickendorf",
+          "hohen schonhausen": "Hohenschönhausen",
+          "hohenschönhausen": "Hohenschönhausen",
+          "alt-treptow": "Treptow",
+          "bergmannkiez": "Kreuzberg",
+          "boxhagener kiez": "Friedrichshain",
+        };
+        if (aliases[n]) return aliases[n];
+        return titleCase(name);
       }
 
       try {
@@ -2120,29 +2853,66 @@
         if (!ipData || !ipData.success) return;
 
         const city = cleanLabel(ipData.city);
+        const region = cleanLabel(ipData.region || ipData.region_code);
+        const country = cleanLabel(ipData.country_code || ipData.country);
         const lat = ipData.latitude;
         const lon = ipData.longitude;
+        const cityKey = norm(city);
 
-        let label = city;
+        let label = city ? titleCase(city) : "";
 
-        if (city && isMajorCity(city) && Number.isFinite(lat) && Number.isFinite(lon)) {
+        if (city && Number.isFinite(lat) && Number.isFinite(lon)) {
           try {
-            const geoRes = await fetch(
-              `https://photon.komoot.io/reverse?lon=${encodeURIComponent(lon)}&lat=${encodeURIComponent(lat)}`
-            );
-            if (geoRes.ok) {
-              const geo = await geoRes.json();
-              const props = geo && geo.features && geo.features[0] && geo.features[0].properties;
-              if (props) {
-                const neighbourhood = cleanLabel(props.locality || props.district || props.suburb);
-                const county = cleanLabel(props.county);
-                if (neighbourhood && neighbourhood.toLowerCase() !== city.toLowerCase()) {
-                  label = neighbourhood;
-                } else if (county && county.toLowerCase() !== city.toLowerCase()) {
-                  label = county;
-                }
+            if (isBayArea(city, region)) {
+              if (cityKey === "san francisco") {
+                const props = await reverseProps(lat, lon);
+                const hood = neighborhoodFrom(props);
+                label = hood ? prettySfNeighborhood(hood) : "San Francisco";
+              } else {
+                label = titleCase(city);
+              }
+            } else if (isNyc(city, region)) {
+              if (NYC_BOROUGHS.has(cityKey)) {
+                label = titleCase(city);
+              } else {
+                const props = await reverseProps(lat, lon);
+                const countyKey = norm(cleanLabel(props && props.county));
+                const borough =
+                  NYC_COUNTY_TO_BOROUGH[countyKey] ||
+                  (NYC_BOROUGHS.has(norm(neighborhoodFrom(props)))
+                    ? titleCase(neighborhoodFrom(props))
+                    : "");
+                const cityFromProps = norm(props && props.city);
+                label =
+                  borough ||
+                  (NYC_BOROUGHS.has(cityFromProps) ? titleCase(props.city) : "Manhattan");
+              }
+            } else if (isLaArea(city, region)) {
+              if (cityKey === "los angeles") {
+                const props = await reverseProps(lat, lon);
+                const hood = neighborhoodFrom(props);
+                label = hood ? prettyLaPlace(hood) : "Los Angeles";
+              } else {
+                label = prettyLaPlace(city);
+              }
+            } else if (isLondon(city, region, country)) {
+              const props = await reverseProps(lat, lon);
+              const hood = neighborhoodFrom(props);
+              if (hood && norm(hood) !== "london" && norm(hood) !== "city of london") {
+                label = titleCase(hood);
+              } else {
+                label = "London";
+              }
+            } else if (isBerlin(city, region, country)) {
+              const props = await reverseProps(lat, lon);
+              const hood = neighborhoodFrom(props);
+              if (hood && norm(hood) !== "berlin") {
+                label = prettyBerlinPlace(hood);
+              } else {
+                label = "Berlin";
               }
             }
+            /* All other cities: keep city name only — no neighbourhood */
           } catch (_) {
             /* keep city */
           }
