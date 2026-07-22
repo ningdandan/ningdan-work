@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ningdan.work</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #f7f3ec;
+      --ink-soft: rgba(247, 243, 236, 0.78);
+      --glass: rgba(12, 10, 8, 0.38);
+      --glass-border: rgba(255, 255, 255, 0.22);
+      --accent: #ffe0b8;
+      --focus: rgba(255, 224, 184, 0.55);
+      /* Matched from video edge / studio blue — edited by BG color controller */
+      --video-blue: #6eb3f5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--video-blue);
+      color: var(--ink);
+      font-family: "DM Sans", sans-serif;
+      cursor: default;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100dvh;
+      min-height: 100vh;
+      overflow: hidden;
+      background: var(--video-blue);
+    }
+
+    .video-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      /* Full window height on wide screens; blue fills left/right gaps */
+      object-fit: contain;
+      object-position: center center;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 1;
+      background: var(--video-blue);
+    }
+
+    .video-layer.is-active {
+      z-index: 1;
+    }
+
+    /* Soft veil only around UI — face stays clear */
+    .veil {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(
+          ellipse 48% 40% at 50% 58%,
+          rgba(20, 40, 80, 0.35) 0%,
+          rgba(20, 40, 80, 0.12) 45%,
+          transparent 72%
+        ),
+        linear-gradient(
+          to top,
+          rgba(30, 70, 140, 0.28) 0%,
+          transparent 26%
+        );
+    }
+
+    .brand {
+      position: absolute;
+      top: clamp(1.1rem, 2.5vw, 1.65rem);
+      left: 0;
+      right: 0;
+      z-index: 6;
+      font-family: "Instrument Serif", serif;
+      font-size: clamp(0.95rem, 1.8vw, 1.2rem);
+      letter-spacing: 0.02em;
+      line-height: 1;
+      text-align: center;
+      opacity: 0;
+      animation: rise-in 1s ease 0.15s forwards;
+      text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .center {
+      position: absolute;
+      left: 50%;
+      top: 66%;
+      transform: translate(-50%, -50%);
+      z-index: 3;
+      width: min(94vw, 44rem);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.15rem;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .greeting {
+      font-family: "Instrument Serif", serif;
+      font-size: clamp(1.75rem, 4.5vw, 2.85rem);
+      font-weight: 400;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      text-shadow: 0 2px 28px rgba(0, 0, 0, 0.55);
+      opacity: 0;
+      animation: rise-in 1s ease 0.35s forwards;
+    }
+
+    .greeting em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .prompt {
+      width: min(100%, 34rem);
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.55rem 0.55rem 0.55rem 1.15rem;
+      border-radius: 999px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(18px) saturate(1.2);
+      -webkit-backdrop-filter: blur(18px) saturate(1.2);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+      opacity: 0;
+      animation: rise-in 1s ease 0.55s forwards, glow-pulse 4.5s ease-in-out 1.6s infinite;
+      pointer-events: auto;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    .prompt:focus-within {
+      border-color: var(--focus);
+      box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.32),
+        0 0 0 3px rgba(232, 196, 160, 0.18);
+      transform: translateY(-1px);
+      animation: rise-in 1s ease 0.55s forwards;
+    }
+
+    .prompt input {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+      font-family: inherit;
+      font-size: clamp(0.95rem, 2.2vw, 1.05rem);
+      font-weight: 400;
+      line-height: 1.4;
+    }
+
+    .prompt input::placeholder {
+      color: transparent;
+    }
+
+    .prompt-field {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .prompt-ghost {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      opacity: 1;
+      transition: opacity 0.2s ease;
+    }
+
+    .prompt-field.is-filled .prompt-ghost {
+      opacity: 0;
+    }
+
+    .prompt-ghost-text {
+      font-size: clamp(0.95rem, 2.2vw, 1.05rem);
+      font-weight: 400;
+      line-height: 1.4;
+      letter-spacing: 0.01em;
+      background-image: linear-gradient(
+        105deg,
+        rgba(247, 243, 236, 0.42) 0%,
+        rgba(247, 243, 236, 0.42) 38%,
+        rgba(255, 236, 210, 0.95) 50%,
+        rgba(247, 243, 236, 0.42) 62%,
+        rgba(247, 243, 236, 0.42) 100%
+      );
+      background-size: 220% 100%;
+      background-position: 100% 0;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      animation: placeholder-shine 2.8s ease-in-out infinite;
+    }
+
+    .prompt-caret {
+      flex-shrink: 0;
+      width: 1.5px;
+      height: 1.05em;
+      margin-left: 1px;
+      border-radius: 1px;
+      background: rgba(255, 224, 184, 0.85);
+      box-shadow: 0 0 10px rgba(255, 224, 184, 0.45);
+      animation: caret-blink 1s steps(1, end) infinite;
+    }
+
+    .prompt button {
+      flex-shrink: 0;
+      width: 2.65rem;
+      height: 2.65rem;
+      border: 0;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #1a1510;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .prompt button:hover {
+      transform: scale(1.05);
+      background: var(--accent);
+    }
+
+    .prompt button:active {
+      transform: scale(0.96);
+    }
+
+    .prompt button svg {
+      width: 1.05rem;
+      height: 1.05rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.45rem;
+      width: min(96vw, 44rem);
+      max-width: none;
+      pointer-events: auto;
+      opacity: 0;
+      animation: rise-in 1s ease 0.75s forwards;
+    }
+
+    .action-pill {
+      appearance: none;
+      border: 1px solid var(--glass-border);
+      background: rgba(12, 10, 8, 0.34);
+      backdrop-filter: blur(14px) saturate(1.15);
+      -webkit-backdrop-filter: blur(14px) saturate(1.15);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: clamp(0.78rem, 1.7vw, 0.88rem);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      padding: 0.55rem 0.95rem;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    }
+
+    .action-pill:hover {
+      background: rgba(12, 10, 8, 0.5);
+      border-color: rgba(255, 255, 255, 0.32);
+      transform: translateY(-1px);
+    }
+
+    .action-pill:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .socials {
+      position: absolute;
+      bottom: clamp(1.1rem, 3vw, 1.85rem);
+      left: 0;
+      right: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      opacity: 0;
+      animation: rise-in 1s ease 0.9s forwards;
+    }
+
+    .socials a {
+      width: 2.55rem;
+      height: 2.55rem;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      border: 1px solid var(--glass-border);
+      background: rgba(12, 10, 8, 0.34);
+      backdrop-filter: blur(14px) saturate(1.15);
+      -webkit-backdrop-filter: blur(14px) saturate(1.15);
+      color: var(--ink);
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    }
+
+    .socials a:hover {
+      background: rgba(12, 10, 8, 0.5);
+      border-color: rgba(255, 255, 255, 0.32);
+      transform: translateY(-1px);
+      color: var(--accent);
+    }
+
+    .socials a:active {
+      transform: translateY(0) scale(0.96);
+    }
+
+    .socials svg {
+      width: 1.1rem;
+      height: 1.1rem;
+      fill: currentColor;
+    }
+
+    .music-player {
+      position: relative;
+      display: flex;
+      align-items: center;
+      height: 2.55rem;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+    }
+
+    .music-btn {
+      appearance: none;
+      flex-shrink: 0;
+      width: 2.55rem;
+      height: 2.55rem;
+      margin: 0;
+      padding: 0;
+      border-radius: 999px;
+      border: 1px solid var(--glass-border);
+      background: rgba(12, 10, 8, 0.34);
+      backdrop-filter: blur(14px) saturate(1.15);
+      -webkit-backdrop-filter: blur(14px) saturate(1.15);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    }
+
+    .music-btn:hover {
+      background: rgba(12, 10, 8, 0.5);
+      border-color: rgba(255, 255, 255, 0.32);
+      transform: translateY(-1px);
+      color: var(--accent);
+    }
+
+    .music-btn:active {
+      transform: translateY(0) scale(0.96);
+    }
+
+    .music-btn .icon-pause {
+      display: none;
+    }
+
+    .music-player.is-playing .music-btn .icon-play {
+      display: none;
+    }
+
+    .music-player.is-playing .music-btn .icon-pause {
+      display: block;
+    }
+
+    .music-title {
+      position: absolute;
+      left: calc(100% + 0.55rem);
+      top: 50%;
+      transform: translateY(-50%);
+      display: block;
+      width: 0;
+      max-width: 0;
+      opacity: 0;
+      overflow: hidden;
+      text-decoration: none;
+      color: var(--ink);
+      border: 0;
+      background: transparent;
+      pointer-events: none;
+      mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+      transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), max-width 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+    }
+
+    .music-player.is-playing .music-title {
+      width: min(46vw, 15rem);
+      max-width: min(46vw, 15rem);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .music-marquee {
+      display: inline-flex;
+      align-items: center;
+      width: max-content;
+      gap: 2.25rem;
+      white-space: nowrap;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      line-height: 2.55rem;
+      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+      animation: music-roll 14s linear infinite;
+    }
+
+    .music-title:hover .music-marquee {
+      color: var(--accent);
+      animation-play-state: paused;
+    }
+
+    .music-marquee span {
+      flex-shrink: 0;
+    }
+
+    @keyframes music-roll {
+      from { transform: translateX(0); }
+      to { transform: translateX(calc(-50% - 1.125rem)); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .music-marquee {
+        animation: none;
+      }
+    }
+
+    .pending-dot {
+      position: absolute;
+      top: clamp(1.4rem, 3vw, 2.2rem);
+      right: clamp(1.25rem, 3vw, 2rem);
+      z-index: 3;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0;
+      transform: scale(0.6);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      box-shadow: 0 0 12px rgba(232, 196, 160, 0.7);
+      pointer-events: none;
+    }
+
+    .pending-dot.is-on {
+      opacity: 1;
+      transform: scale(1);
+      animation: breathe 1.4s ease-in-out infinite;
+    }
+
+    /* —— Chat overlay —— */
+    .stage.is-chat .center,
+    .stage.is-chat .socials {
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .chat {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: stretch;
+      padding: clamp(4.5rem, 10vh, 5.5rem) clamp(1rem, 3vw, 1.5rem) clamp(1.25rem, 3vw, 1.75rem);
+      background: transparent;
+      pointer-events: none;
+      /* Avoid opacity on this wrapper — it breaks backdrop-filter over <video> */
+    }
+
+    .stage.is-chat .chat {
+      display: flex;
+    }
+
+    .chat-close {
+      position: absolute;
+      top: clamp(1rem, 2.5vw, 1.4rem);
+      right: clamp(1rem, 3vw, 1.75rem);
+      width: 2.4rem;
+      height: 2.4rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.35);
+      color: #2a241c;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      pointer-events: auto;
+      backdrop-filter: blur(28px) saturate(1.5);
+      -webkit-backdrop-filter: blur(28px) saturate(1.5);
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .chat-close:hover {
+      background: rgba(255, 255, 255, 0.5);
+      transform: scale(1.04);
+    }
+
+    .chat-close svg {
+      width: 1rem;
+      height: 1rem;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .chat-panel {
+      width: min(100%, 42rem);
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      border-radius: 1.35rem;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(72px) saturate(1.55);
+      -webkit-backdrop-filter: blur(72px) saturate(1.55);
+      box-shadow:
+        0 18px 48px rgba(60, 90, 130, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.85);
+      overflow: hidden;
+      pointer-events: auto;
+      color: #2a241c;
+      animation: chat-panel-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .chat-messages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 1.25rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      scroll-behavior: smooth;
+    }
+
+    .chat-bubble {
+      max-width: min(92%, 28rem);
+      padding: 0.75rem 1rem;
+      border-radius: 1.1rem;
+      font-size: 0.95rem;
+      line-height: 1.45;
+      text-align: left;
+      animation: rise-in 0.35s ease;
+    }
+
+    .chat-bubble.is-bot {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      color: #2a241c;
+      border-bottom-left-radius: 0.35rem;
+    }
+
+    .chat-bubble.is-user {
+      align-self: flex-end;
+      background: rgba(255, 255, 255, 0.82);
+      color: #2a241c;
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      border-bottom-right-radius: 0.35rem;
+    }
+
+    .chat-composer {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.75rem 0.85rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.24);
+    }
+
+    .chat-composer input {
+      flex: 1;
+      min-width: 0;
+      height: 2.65rem;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.5);
+      color: #2a241c;
+      font-family: inherit;
+      font-size: 0.95rem;
+      padding: 0 1rem;
+      outline: none;
+    }
+
+    .chat-composer input::placeholder {
+      color: rgba(42, 36, 28, 0.45);
+    }
+
+    .chat-composer input:focus {
+      border-color: rgba(255, 224, 184, 0.95);
+      background: rgba(255, 255, 255, 0.68);
+    }
+
+    .chat-composer button {
+      flex-shrink: 0;
+      width: 2.65rem;
+      height: 2.65rem;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      color: #2a241c;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .chat-composer button:hover {
+      background: var(--accent);
+      transform: scale(1.05);
+    }
+
+    .chat-composer button svg {
+      width: 1.05rem;
+      height: 1.05rem;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    @keyframes chat-panel-in {
+      from {
+        transform: translateY(12px) scale(0.985);
+      }
+      to {
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes rise-in {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% {
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+      }
+      50% {
+        box-shadow:
+          0 12px 40px rgba(0, 0, 0, 0.28),
+          0 0 0 1px rgba(232, 196, 160, 0.12);
+      }
+    }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 0.55; }
+      50% { opacity: 1; }
+    }
+
+    @keyframes placeholder-shine {
+      0% { background-position: 100% 0; }
+      100% { background-position: -120% 0; }
+    }
+
+    @keyframes caret-blink {
+      0%, 45% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    @media (max-width: 640px) {
+      .center {
+        top: 70%;
+        width: min(96vw, 44rem);
+        gap: 0.95rem;
+      }
+
+      .action-pill {
+        white-space: normal;
+        text-wrap: balance;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .brand,
+      .greeting,
+      .prompt,
+      .actions,
+      .socials,
+      .pending-dot,
+      .chat-panel {
+        animation: none !important;
+        opacity: 1;
+        transition: none;
+      }
+
+      .prompt-ghost-text,
+      .prompt-caret {
+        animation: none !important;
+        color: var(--ink-soft);
+        -webkit-text-fill-color: var(--ink-soft);
+        background: none;
+        opacity: 1;
+      }
+    }
+
+    /* —— BG color controller —— */
+    .bg-toggle {
+      position: absolute;
+      top: clamp(1.25rem, 3vw, 2rem);
+      right: clamp(1.25rem, 3vw, 2rem);
+      z-index: 5;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 999px;
+      border: 1px solid var(--glass-border);
+      background: var(--glass);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: var(--ink);
+      cursor: pointer;
+      display: none;
+      place-items: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .bg-toggle.is-visible {
+      display: grid;
+    }
+
+    .bg-toggle svg {
+      width: 1.15rem;
+      height: 1.15rem;
+    }
+
+    .bg-panel {
+      position: absolute;
+      top: calc(clamp(1.25rem, 3vw, 2rem) + 3rem);
+      right: clamp(1.25rem, 3vw, 2rem);
+      z-index: 5;
+      width: min(92vw, 17.5rem);
+      padding: 0.9rem;
+      border-radius: 1rem;
+      border: 1px solid var(--glass-border);
+      background: rgba(12, 10, 8, 0.72);
+      backdrop-filter: blur(18px) saturate(1.15);
+      -webkit-backdrop-filter: blur(18px) saturate(1.15);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+      color: var(--ink);
+      display: none;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+
+    .bg-panel.is-open {
+      display: flex;
+    }
+
+    .bg-panel h2 {
+      font-family: "Instrument Serif", serif;
+      font-size: 1.15rem;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    .bg-panel .sub {
+      margin-top: -0.35rem;
+      font-size: 0.72rem;
+      line-height: 1.35;
+      color: var(--ink-soft);
+    }
+
+    .bg-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .bg-row input[type="color"] {
+      width: 2.5rem;
+      height: 2.5rem;
+      padding: 0;
+      border: 1px solid var(--glass-border);
+      border-radius: 0.55rem;
+      background: transparent;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .bg-row input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 3px;
+    }
+
+    .bg-row input[type="color"]::-webkit-color-swatch {
+      border: none;
+      border-radius: 0.35rem;
+    }
+
+    .bg-row input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      height: 2.5rem;
+      border-radius: 0.55rem;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--ink);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9rem;
+      padding: 0 0.75rem;
+      outline: none;
+    }
+
+    .bg-row input[type="text"]:focus {
+      border-color: var(--focus);
+    }
+
+    .bg-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+    }
+
+    .bg-actions button,
+    .bg-save {
+      height: 2.35rem;
+      border-radius: 0.55rem;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .bg-actions button:hover,
+    .bg-save:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .bg-actions button:active,
+    .bg-save:active {
+      transform: scale(0.98);
+    }
+
+    .bg-actions button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .bg-save {
+      width: 100%;
+      background: var(--ink);
+      color: #1a1510;
+      border-color: transparent;
+      font-weight: 600;
+    }
+
+    .bg-save:hover {
+      background: var(--accent);
+    }
+
+    .bg-status {
+      min-height: 1.1rem;
+      font-size: 0.7rem;
+      line-height: 1.35;
+      color: var(--ink-soft);
+    }
+
+    .bg-status.is-ok {
+      color: #b8f0c8;
+    }
+
+    .bg-status.is-err {
+      color: #ffc9b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <video
+      class="video-layer is-active"
+      id="videoA"
+      muted
+      playsinline
+      autoplay
+      preload="auto"
+    ></video>
+    <video
+      class="video-layer"
+      id="videoB"
+      muted
+      playsinline
+      preload="none"
+    ></video>
+
+    <div class="veil" aria-hidden="true"></div>
+
+    <div class="brand">ningdan.work</div>
+    <div class="pending-dot" id="pendingDot" aria-hidden="true"></div>
+
+    <button
+      type="button"
+      class="bg-toggle"
+      id="bgToggle"
+      aria-expanded="false"
+      aria-controls="bgPanel"
+      title="Background color"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3a6 6 0 0 0-6 6c0 4 6 12 6 12s6-8 6-12a6 6 0 0 0-6-6z" />
+        <circle cx="12" cy="9" r="2" />
+      </svg>
+    </button>
+
+    <div class="bg-panel" id="bgPanel" role="dialog" aria-label="Background color">
+      <h2>Background</h2>
+      <p class="sub">Pick from the screen or dial in a hex. Save writes it into the page for next launch.</p>
+      <div class="bg-row">
+        <input type="color" id="bgColorPicker" value="#6eb3f5" aria-label="Color picker" />
+        <input type="text" id="bgColorHex" value="#6eb3f5" spellcheck="false" maxlength="9" aria-label="Hex color" />
+      </div>
+      <div class="bg-actions">
+        <button type="button" id="bgEyedropper">Eyedropper</button>
+        <button type="button" id="bgReset">Reset</button>
+      </div>
+      <button type="button" class="bg-save" id="bgSave">Save</button>
+      <p class="bg-status" id="bgStatus" aria-live="polite"></p>
+    </div>
+
+    <div class="center">
+      <h1 class="greeting">hi <span id="greetingPlace">there</span>, ready to chat <em>24/7</em></h1>
+      <form class="prompt" id="promptForm" autocomplete="off">
+        <div class="prompt-field" id="promptField">
+          <span class="prompt-ghost" id="promptGhost" aria-hidden="true">
+            <span class="prompt-ghost-text" id="promptGhostText"></span>
+            <span class="prompt-caret"></span>
+          </span>
+          <input
+            id="promptInput"
+            type="text"
+            name="q"
+            placeholder=""
+            aria-label="Ask a question"
+          />
+        </div>
+        <button type="submit" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </button>
+      </form>
+      <nav class="actions" aria-label="Quick actions">
+        <button type="button" class="action-pill" data-action="cv">View CV</button>
+        <button type="button" class="action-pill" data-action="salesforce">Agentic AI at Salesforce</button>
+        <button type="button" class="action-pill" data-action="side-project">Side Project</button>
+        <button type="button" class="action-pill" data-action="about">About Me</button>
+      </nav>
+    </div>
+
+    <nav class="socials" aria-label="Social links">
+      <a
+        href="https://www.linkedin.com/in/ningdan"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="LinkedIn"
+        title="LinkedIn"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4.98 3.5C4.98 4.88 3.88 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.24 8.25h4.52V24H.24V8.25zM8.34 8.25h4.33v2.14h.06c.6-1.14 2.08-2.34 4.28-2.34 4.58 0 5.42 3.02 5.42 6.94V24h-4.52v-6.86c0-1.64-.03-3.74-2.28-3.74-2.28 0-2.63 1.78-2.63 3.62V24H8.34V8.25z" />
+        </svg>
+      </a>
+      <a
+        href="mailto:hi@ningdan.work"
+        aria-label="Email"
+        title="Email"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M2 5.5A2.5 2.5 0 0 1 4.5 3h15A2.5 2.5 0 0 1 22 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 18.5v-13zm1.7-.2 8.05 5.7a.5.5 0 0 0 .58 0L20.3 5.3a.75.75 0 0 0-.8-.05H4.5c-.28 0-.54.09-.8.15zM20.5 7.86l-7.5 5.31a2 2 0 0 1-2.3 0L3.5 7.86V18.5c0 .55.45 1 1 1h15c.55 0 1-.45 1-1V7.86z" />
+        </svg>
+      </a>
+      <div class="music-player" id="musicPlayer">
+        <button type="button" class="music-btn" id="musicBtn" aria-label="Play music" title="Play music">
+          <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86a1 1 0 0 0-1.5.86z" />
+          </svg>
+          <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 5h3.5v14H7V5zm6.5 0H17v14h-3.5V5z" />
+          </svg>
+        </button>
+        <a
+          class="music-title"
+          id="musicTitle"
+          href="https://www.youtube.com/watch?v=R3AKaZS8r1g&list=RDR3AKaZS8r1g&start_radio=1"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open on YouTube"
+        >
+          <span class="music-marquee">
+            <span>Kraftwerk - Techno Pop (2009 Remaster)</span>
+            <span aria-hidden="true">Kraftwerk - Techno Pop (2009 Remaster)</span>
+          </span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="chat" id="chat" aria-hidden="true">
+      <button type="button" class="chat-close" id="chatClose" aria-label="Close chat">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+      <div class="chat-panel">
+        <div class="chat-messages" id="chatMessages" role="log" aria-live="polite"></div>
+        <form class="chat-composer" id="chatForm" autocomplete="off">
+          <input
+            id="chatInput"
+            type="text"
+            placeholder="Message Ningdan…"
+            aria-label="Message"
+          />
+          <button type="submit" aria-label="Send">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const VIDEOS = ["video1.mp4", "video2.mp4", "video3.mp4"];
+    const MUSIC_VIDEO = "music.mp4";
+    const MUSIC_AUDIO = "music.mp3";
+    const MUSIC_BG = "#000000";
+    const BG_STORAGE_KEY = "aura-video-blue-v2";
+    const BG_DEFAULT = "#6eb3f5";
+    const BG_COLOR_RE = /(--video-blue:\s*)(#[0-9a-fA-F]{3,8})(\s*;)/;
+
+    const videoA = document.getElementById("videoA");
+    const videoB = document.getElementById("videoB");
+    const pendingDot = document.getElementById("pendingDot");
+    const stage = document.getElementById("stage");
+    const promptForm = document.getElementById("promptForm");
+    const promptInput = document.getElementById("promptInput");
+    const musicBtn = document.getElementById("musicBtn");
+    const musicPlayer = document.getElementById("musicPlayer");
+    const musicTitle = document.getElementById("musicTitle");
+    const chat = document.getElementById("chat");
+    const chatClose = document.getElementById("chatClose");
+    const chatMessages = document.getElementById("chatMessages");
+    const chatForm = document.getElementById("chatForm");
+    const chatInput = document.getElementById("chatInput");
+
+    let chatOpen = false;
+
+    const bgMusic = new Audio(MUSIC_AUDIO);
+    bgMusic.preload = "auto";
+    bgMusic.loop = false;
+
+    const bgToggle = document.getElementById("bgToggle");
+    const bgPanel = document.getElementById("bgPanel");
+    const bgColorPicker = document.getElementById("bgColorPicker");
+    const bgColorHex = document.getElementById("bgColorHex");
+    const bgEyedropper = document.getElementById("bgEyedropper");
+    const bgReset = document.getElementById("bgReset");
+    const bgSave = document.getElementById("bgSave");
+    const bgStatus = document.getElementById("bgStatus");
+
+    let active = videoA;
+    let inactive = videoB;
+    let index = Math.floor(Math.random() * VIDEOS.length);
+    let switching = false;
+    let preloadedIndex = null;
+    let htmlFileHandle = null;
+    let swapToken = 0;
+    let pendingDotTimer = 0;
+    let preloadArmed = false;
+    let musicMode = false;
+    let bgBeforeMusic = null;
+
+    function srcFor(i) {
+      return VIDEOS[i];
+    }
+
+    /** Random index that is never the current one */
+    function pickOtherIndex(avoid) {
+      const skip = avoid == null ? index : avoid;
+      const options = [];
+      for (let i = 0; i < VIDEOS.length; i++) {
+        if (i !== skip) options.push(i);
+      }
+      return options[Math.floor(Math.random() * options.length)];
+    }
+
+    async function playSafe(el) {
+      try {
+        await el.play();
+      } catch (_) {
+        /* autoplay may be blocked until first gesture */
+      }
+    }
+
+    /** Drop decoder buffers so swapped-out clips don’t accumulate in memory */
+    function unloadVideo(el) {
+      el.pause();
+      el.loop = false;
+      el.removeAttribute("src");
+      el.load();
+    }
+
+    function loadInto(el, i) {
+      const nextSrc = srcFor(i);
+      const current = el.getAttribute("src") || "";
+      if (current === nextSrc) return false;
+      el.loop = false;
+      el.src = nextSrc;
+      el.load();
+      return true;
+    }
+
+    function waitForCanPlay(el) {
+      return new Promise((resolve, reject) => {
+        if (el.readyState >= 3) {
+          resolve();
+          return;
+        }
+        const onReady = () => {
+          cleanup();
+          resolve();
+        };
+        const onError = () => {
+          cleanup();
+          reject(new Error("media error"));
+        };
+        const cleanup = () => {
+          el.removeEventListener("canplay", onReady);
+          el.removeEventListener("error", onError);
+        };
+        el.addEventListener("canplay", onReady);
+        el.addEventListener("error", onError);
+      });
+    }
+
+    function waitUntilReady(el, token) {
+      return new Promise((resolve, reject) => {
+        if (token !== swapToken) {
+          reject(new Error("aborted"));
+          return;
+        }
+        if (el.readyState >= 3) {
+          resolve();
+          return;
+        }
+        const onReady = () => {
+          cleanup();
+          resolve();
+        };
+        const onError = () => {
+          cleanup();
+          reject(new Error("media error"));
+        };
+        const cleanup = () => {
+          el.removeEventListener("canplay", onReady);
+          el.removeEventListener("error", onError);
+        };
+        el.addEventListener("canplay", onReady);
+        el.addEventListener("error", onError);
+      });
+    }
+
+    function preloadOther(forceIndex) {
+      if (musicMode) return;
+      const next = forceIndex != null ? forceIndex : pickOtherIndex();
+      if (preloadedIndex === next && inactive.getAttribute("src") === srcFor(next)) {
+        return;
+      }
+      preloadedIndex = next;
+      loadInto(inactive, next);
+    }
+
+    function maybePreloadFromProgress() {
+      if (musicMode || switching || preloadArmed) return;
+      const d = active.duration;
+      if (!d || !isFinite(d)) return;
+      /* Warm the next clip in the last ~35% so the cut stays seamless */
+      if (active.currentTime / d >= 0.65) {
+        preloadArmed = true;
+        preloadOther(preloadedIndex != null ? preloadedIndex : pickOtherIndex());
+      }
+    }
+
+    async function swapVideos() {
+      if (musicMode || switching) return;
+      switching = true;
+      const token = ++swapToken;
+
+      const nextIndex =
+        preloadedIndex !== null && preloadedIndex !== index
+          ? preloadedIndex
+          : pickOtherIndex();
+
+      try {
+        loadInto(inactive, nextIndex);
+        await waitUntilReady(inactive, token);
+        if (token !== swapToken) return;
+
+        inactive.currentTime = 0;
+        await playSafe(inactive);
+        if (token !== swapToken) return;
+
+        /* Hard cut only after the next clip is already playing — no fade/black */
+        inactive.classList.add("is-active");
+        active.classList.remove("is-active");
+        active.pause();
+
+        const prev = active;
+        active = inactive;
+        inactive = prev;
+        index = nextIndex;
+        preloadedIndex = null;
+        preloadArmed = false;
+
+        /* Free the outgoing element’s decoded frames / media buffer */
+        unloadVideo(inactive);
+      } catch (_) {
+        /* Retry once with a fresh pick if preload failed */
+        if (token === swapToken && !musicMode) {
+          preloadedIndex = null;
+          preloadArmed = false;
+          try {
+            const fallback = pickOtherIndex();
+            loadInto(inactive, fallback);
+            await waitUntilReady(inactive, token);
+            inactive.currentTime = 0;
+            await playSafe(inactive);
+            inactive.classList.add("is-active");
+            active.classList.remove("is-active");
+            active.pause();
+            const prev = active;
+            active = inactive;
+            inactive = prev;
+            index = fallback;
+            unloadVideo(inactive);
+          } catch (_) {
+            /* keep current frame if media fails entirely */
+          }
+        }
+      } finally {
+        if (token === swapToken) switching = false;
+      }
+    }
+
+    function onInteract() {
+      if (musicMode || chatOpen) return;
+      /* Pick a different upcoming clip without thrashing loads every click */
+      const next = pickOtherIndex();
+      if (preloadedIndex !== next) {
+        preloadedIndex = next;
+        if (preloadArmed || (active.duration && active.currentTime / active.duration >= 0.5)) {
+          preloadOther(next);
+        }
+      }
+      pendingDot.classList.add("is-on");
+      window.clearTimeout(pendingDotTimer);
+      pendingDotTimer = window.setTimeout(() => pendingDot.classList.remove("is-on"), 700);
+    }
+
+    function onEnded() {
+      if (musicMode) return;
+      /* Always advance to a different random clip — never loop the same one */
+      swapVideos();
+    }
+
+    function setMusicButton(playing) {
+      musicPlayer.classList.toggle("is-playing", playing);
+      musicBtn.setAttribute("aria-label", playing ? "Pause music" : "Play music");
+      musicBtn.title = playing ? "Pause music" : "Play music";
+    }
+
+    async function startMusicMode() {
+      if (musicMode) return;
+      musicMode = true;
+      swapToken += 1;
+      switching = false;
+      preloadedIndex = null;
+      preloadArmed = false;
+      setMusicButton(true);
+
+      bgBeforeMusic =
+        normalizeHex(document.documentElement.style.getPropertyValue("--video-blue")) ||
+        normalizeHex(localStorage.getItem(BG_STORAGE_KEY)) ||
+        readCssBlue();
+      applyBgColor(MUSIC_BG, false);
+
+      unloadVideo(inactive);
+      active.pause();
+      active.loop = true;
+      active.src = MUSIC_VIDEO;
+      active.load();
+
+      try {
+        await waitForCanPlay(active);
+        active.currentTime = 0;
+        await playSafe(active);
+        bgMusic.currentTime = 0;
+        await bgMusic.play();
+      } catch (_) {
+        await stopMusicMode();
+      }
+    }
+
+    async function stopMusicMode() {
+      if (!musicMode && bgMusic.paused) {
+        setMusicButton(false);
+        return;
+      }
+      musicMode = false;
+      setMusicButton(false);
+
+      if (bgBeforeMusic) {
+        applyBgColor(bgBeforeMusic, true);
+        bgBeforeMusic = null;
+      }
+
+      try {
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+      } catch (_) {}
+
+      swapToken += 1;
+      switching = false;
+      preloadedIndex = null;
+      preloadArmed = false;
+      unloadVideo(inactive);
+
+      active.loop = false;
+      index = Math.floor(Math.random() * VIDEOS.length);
+      loadInto(active, index);
+      try {
+        await waitForCanPlay(active);
+        active.currentTime = 0;
+        await playSafe(active);
+      } catch (_) {}
+    }
+
+    musicBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (musicMode) stopMusicMode();
+      else startMusicMode();
+    });
+
+    musicTitle.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+
+    bgMusic.addEventListener("ended", () => {
+      stopMusicMode();
+    });
+
+    bgMusic.addEventListener("pause", () => {
+      /* Only treat as stop when leaving music mode intentionally or track ended */
+      if (!musicMode) setMusicButton(false);
+    });
+
+    /* ——— Background color controller ——— */
+    function normalizeHex(value) {
+      if (!value) return null;
+      let v = String(value).trim();
+      if (!v.startsWith("#")) v = `#${v}`;
+      if (/^#[0-9a-fA-F]{3}$/.test(v)) {
+        v = `#${v[1]}${v[1]}${v[2]}${v[2]}${v[3]}${v[3]}`;
+      }
+      if (!/^#[0-9a-fA-F]{6}$/.test(v) && !/^#[0-9a-fA-F]{8}$/.test(v)) return null;
+      return v.toLowerCase().slice(0, 7);
+    }
+
+    function readCssBlue() {
+      const raw = getComputedStyle(document.documentElement)
+        .getPropertyValue("--video-blue")
+        .trim();
+      return normalizeHex(raw) || BG_DEFAULT;
+    }
+
+    function applyBgColor(color, syncInputs = true) {
+      const hex = normalizeHex(color);
+      if (!hex) return false;
+      document.documentElement.style.setProperty("--video-blue", hex);
+      if (syncInputs) {
+        bgColorPicker.value = hex;
+        bgColorHex.value = hex;
+      }
+      return true;
+    }
+
+    function setBgStatus(message, kind) {
+      bgStatus.textContent = message;
+      bgStatus.classList.remove("is-ok", "is-err");
+      if (kind) bgStatus.classList.add(kind);
+    }
+
+    function openBgPanel(open) {
+      bgPanel.classList.toggle("is-open", open);
+      bgToggle.classList.toggle("is-visible", open);
+      bgToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      bgToggle.hidden = !open;
+    }
+
+    openBgPanel(false);
+
+    async function idbGet(key) {
+      return new Promise((resolve) => {
+        const req = indexedDB.open("aura-bg", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("handles");
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction("handles", "readonly");
+          const getReq = tx.objectStore("handles").get(key);
+          getReq.onsuccess = () => resolve(getReq.result || null);
+          getReq.onerror = () => resolve(null);
+        };
+        req.onerror = () => resolve(null);
+      });
+    }
+
+    async function idbSet(key, value) {
+      return new Promise((resolve) => {
+        const req = indexedDB.open("aura-bg", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("handles");
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction("handles", "readwrite");
+          tx.objectStore("handles").put(value, key);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        };
+        req.onerror = () => resolve(false);
+      });
+    }
+
+    async function ensureHtmlHandle() {
+      if (htmlFileHandle) {
+        const perm = await htmlFileHandle.queryPermission({ mode: "readwrite" });
+        if (perm === "granted") return htmlFileHandle;
+        const next = await htmlFileHandle.requestPermission({ mode: "readwrite" });
+        if (next === "granted") return htmlFileHandle;
+      }
+
+      const stored = await idbGet("indexHtml");
+      if (stored) {
+        htmlFileHandle = stored;
+        const perm = await htmlFileHandle.requestPermission({ mode: "readwrite" });
+        if (perm === "granted") return htmlFileHandle;
+      }
+
+      if (!window.showOpenFilePicker) return null;
+
+      setBgStatus("Select this page’s index.html to write the color back…");
+      const [handle] = await window.showOpenFilePicker({
+        multiple: false,
+        types: [
+          {
+            description: "Homepage HTML",
+            accept: { "text/html": [".html"] },
+          },
+        ],
+      });
+      htmlFileHandle = handle;
+      await idbSet("indexHtml", handle);
+      return handle;
+    }
+
+    async function writeColorIntoHtml(color) {
+      const handle = await ensureHtmlHandle();
+      if (!handle) {
+        throw new Error("FILE_PICKER_UNAVAILABLE");
+      }
+
+      const file = await handle.getFile();
+      let text = await file.text();
+      if (!BG_COLOR_RE.test(text)) {
+        throw new Error("COLOR_MARKER_MISSING");
+      }
+      text = text.replace(BG_COLOR_RE, `$1${color}$3`);
+
+      const writable = await handle.createWritable();
+      await writable.write(text);
+      await writable.close();
+    }
+
+    async function saveBgColor() {
+      const hex = normalizeHex(bgColorHex.value) || normalizeHex(bgColorPicker.value);
+      if (!hex) {
+        setBgStatus("Enter a valid hex like #6eb3f5", "is-err");
+        return;
+      }
+
+      applyBgColor(hex);
+      localStorage.setItem(BG_STORAGE_KEY, hex);
+
+      try {
+        await writeColorIntoHtml(hex);
+        setBgStatus(`Saved ${hex} into index.html + browser memory`, "is-ok");
+      } catch (err) {
+        if (err && err.message === "FILE_PICKER_UNAVAILABLE") {
+          setBgStatus(
+            `Saved ${hex} in this browser. File write needs Chrome/Edge — reopen still remembers here.`,
+            "is-ok"
+          );
+          return;
+        }
+        if (err && err.name === "AbortError") {
+          setBgStatus(`Saved ${hex} in this browser (file write canceled)`, "is-ok");
+          return;
+        }
+        console.warn(err);
+        setBgStatus(
+          `Saved ${hex} in this browser. Couldn’t rewrite the HTML file.`,
+          "is-err"
+        );
+      }
+    }
+
+    /* Restore: localStorage wins over baked-in CSS (same machine), else CSS default */
+    (function initBgColor() {
+      const stored = normalizeHex(localStorage.getItem(BG_STORAGE_KEY));
+      const initial = stored || readCssBlue();
+      applyBgColor(initial);
+
+      if (!window.EyeDropper) {
+        bgEyedropper.disabled = true;
+        bgEyedropper.title = "Eyedropper not supported in this browser";
+      }
+    })();
+
+    bgToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openBgPanel(false);
+    });
+
+    bgPanel.addEventListener("pointerdown", (e) => e.stopPropagation());
+    bgPanel.addEventListener("click", (e) => e.stopPropagation());
+    bgToggle.addEventListener("pointerdown", (e) => e.stopPropagation());
+
+    bgColorPicker.addEventListener("input", () => {
+      applyBgColor(bgColorPicker.value);
+      setBgStatus("Previewing — hit Save to keep it");
+    });
+
+    bgColorHex.addEventListener("input", () => {
+      const hex = normalizeHex(bgColorHex.value);
+      if (hex) {
+        applyBgColor(hex, false);
+        bgColorPicker.value = hex;
+        setBgStatus("Previewing — hit Save to keep it");
+      }
+    });
+
+    bgColorHex.addEventListener("change", () => {
+      const hex = normalizeHex(bgColorHex.value);
+      if (hex) applyBgColor(hex);
+      else {
+        bgColorHex.value = readCssBlue();
+        setBgStatus("Invalid hex", "is-err");
+      }
+    });
+
+    bgEyedropper.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!window.EyeDropper) return;
+      try {
+        setBgStatus("Click anywhere on screen to sample…");
+        const result = await new EyeDropper().open();
+        applyBgColor(result.sRGBHex);
+        setBgStatus("Previewing — hit Save to keep it");
+      } catch (err) {
+        if (err && err.name !== "AbortError") {
+          setBgStatus("Eyedropper canceled", "is-err");
+        } else {
+          setBgStatus("");
+        }
+      }
+    });
+
+    bgReset.addEventListener("click", (e) => {
+      e.stopPropagation();
+      applyBgColor(BG_DEFAULT);
+      setBgStatus(`Reset to ${BG_DEFAULT} — Save to keep`);
+    });
+
+    bgSave.addEventListener("click", (e) => {
+      e.stopPropagation();
+      saveBgColor();
+    });
+
+    /* Init with a random video — preload only near the end of each clip */
+    loadInto(active, index);
+    unloadVideo(inactive);
+    playSafe(active);
+
+    [videoA, videoB].forEach((v) => {
+      v.addEventListener("ended", () => {
+        if (v === active) onEnded();
+      });
+      v.addEventListener("timeupdate", () => {
+        if (v === active) maybePreloadFromProgress();
+      });
+    });
+
+    stage.addEventListener("pointerdown", (e) => {
+      if (chatOpen) return;
+      if (e.target.closest(".bg-panel, .bg-toggle, .actions, .prompt, .socials, .chat")) return;
+      onInteract();
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (document.activeElement === promptInput) return;
+      if (document.activeElement === chatInput) return;
+      if (document.activeElement === bgColorHex) return;
+
+      if (e.key === "Escape") {
+        if (chatOpen) {
+          closeChat();
+          return;
+        }
+        openBgPanel(false);
+        return;
+      }
+
+      if (chatOpen) return;
+
+      if (e.key === "c" || e.key === "C") {
+        e.preventDefault();
+        openBgPanel(!bgPanel.classList.contains("is-open"));
+        return;
+      }
+
+      if (e.key === "Tab" || e.key === "Shift") return;
+      onInteract();
+    });
+
+    const CHAT_REPLIES = {
+      cv: "Here’s a quick look at my path — Lead Product Designer at Salesforce, focused on agentic enterprise tools, self-service, and systems that help teams move faster. Want a PDF resume or a deeper walkthrough of a specific chapter?",
+      salesforce: "At Salesforce I’ve been designing agentic experiences across Service Cloud — self-service, workforce management, knowledge, and automation. Happy to dig into a product story, the design process, or how we ship AI that feels trustworthy.",
+      "side-project": "Outside work I explore tangible craft, electronic music, VJing, and 3D experiments. Side projects are where I play with new tools and weird ideas. Curious about a specific one?",
+      about: "I’m Ningdan — UX designer based in Brooklyn. Half my time is agentic B2B SaaS; the other half is craft, music, and making strange little worlds. What would you like to know?",
+      default: "Hey — I’m Ningdan’s homepage agent. Ask about Salesforce work, side projects, or how I design. What are you curious about?",
+    };
+
+    function appendChatBubble(text, who) {
+      const bubble = document.createElement("div");
+      bubble.className = `chat-bubble is-${who}`;
+      bubble.textContent = text;
+      chatMessages.appendChild(bubble);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function botReplyFor(seed, action) {
+      if (action && CHAT_REPLIES[action]) return CHAT_REPLIES[action];
+      const lower = (seed || "").toLowerCase();
+      if (lower.includes("cv") || lower.includes("resume")) return CHAT_REPLIES.cv;
+      if (lower.includes("salesforce") || lower.includes("agentic")) return CHAT_REPLIES.salesforce;
+      if (lower.includes("side") || lower.includes("project")) return CHAT_REPLIES["side-project"];
+      if (lower.includes("about")) return CHAT_REPLIES.about;
+      return CHAT_REPLIES.default;
+    }
+
+    function openChat(seedText, action) {
+      chatOpen = true;
+      stage.classList.add("is-chat");
+      chat.setAttribute("aria-hidden", "false");
+      chatMessages.innerHTML = "";
+
+      const userText = (seedText || "").trim();
+      if (userText) appendChatBubble(userText, "user");
+
+      window.setTimeout(() => {
+        appendChatBubble(botReplyFor(userText, action), "bot");
+        chatInput.focus();
+      }, 280);
+    }
+
+    function closeChat() {
+      chatOpen = false;
+      stage.classList.remove("is-chat");
+      chat.setAttribute("aria-hidden", "true");
+      chatInput.value = "";
+      chatMessages.innerHTML = "";
+    }
+
+    chatClose.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeChat();
+    });
+
+    chat.addEventListener("pointerdown", (e) => e.stopPropagation());
+
+    document.querySelectorAll(".action-pill").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openChat(btn.textContent.trim(), btn.dataset.action);
+      });
+    });
+
+    promptForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const q = promptInput.value.trim();
+      if (!q) return;
+      openChat(q, null);
+      promptInput.value = "";
+      if (typeof syncGhostVisibility === "function") syncGhostVisibility();
+    });
+
+    chatForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const q = chatInput.value.trim();
+      if (!q) return;
+      appendChatBubble(q, "user");
+      chatInput.value = "";
+      window.setTimeout(() => {
+        appendChatBubble(botReplyFor(q, null), "bot");
+      }, 420);
+    });
+
+    /* Welcoming typewriter placeholder */
+    const PLACEHOLDERS = [
+      "Ask me anything about my work at Salesforce...",
+      "Type a prompt or test my agentic skills...",
+      "What do you want to build together?",
+    ];
+    const promptField = document.getElementById("promptField");
+    const promptGhostText = document.getElementById("promptGhostText");
+    let placeholderIndex = 0;
+    let pauseTypewriter = false;
+    let typewriterRunning = false;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function sleep(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    function syncGhostVisibility() {
+      promptField.classList.toggle("is-filled", Boolean(promptInput.value.trim()));
+    }
+
+    async function typeText(text) {
+      promptGhostText.textContent = "";
+      for (let i = 1; i <= text.length; i++) {
+        if (pauseTypewriter || promptInput.value.trim()) return false;
+        promptGhostText.textContent = text.slice(0, i);
+        await sleep(28 + Math.random() * 36);
+      }
+      return true;
+    }
+
+    async function untypeText() {
+      const text = promptGhostText.textContent || "";
+      for (let i = text.length; i >= 0; i--) {
+        if (pauseTypewriter || promptInput.value.trim()) return false;
+        promptGhostText.textContent = text.slice(0, i);
+        await sleep(16 + Math.random() * 18);
+      }
+      return true;
+    }
+
+    async function startTypewriter() {
+      if (typewriterRunning) return;
+      typewriterRunning = true;
+
+      while (typewriterRunning) {
+        if (pauseTypewriter || promptInput.value.trim()) {
+          await sleep(200);
+          continue;
+        }
+
+        const text = PLACEHOLDERS[placeholderIndex];
+
+        if (reduceMotion) {
+          promptGhostText.textContent = text;
+          await sleep(3200);
+          placeholderIndex = (placeholderIndex + 1) % PLACEHOLDERS.length;
+          continue;
+        }
+
+        const typed = await typeText(text);
+        if (!typed) {
+          await sleep(200);
+          continue;
+        }
+
+        await sleep(2200);
+
+        const cleared = await untypeText();
+        if (!cleared) {
+          await sleep(200);
+          continue;
+        }
+
+        await sleep(380);
+        placeholderIndex = (placeholderIndex + 1) % PLACEHOLDERS.length;
+      }
+    }
+
+    promptInput.addEventListener("input", syncGhostVisibility);
+    promptInput.addEventListener("focus", syncGhostVisibility);
+    promptInput.addEventListener("blur", syncGhostVisibility);
+    syncGhostVisibility();
+    startTypewriter();
+
+    /* Greet by place from visitor IP — neighbourhood/county for major cities */
+    (async function greetByCity() {
+      const placeEl = document.getElementById("greetingPlace");
+      if (!placeEl) return;
+
+      const MAJOR_CITIES = new Set([
+        "new york", "new york city", "nyc", "los angeles", "chicago", "houston",
+        "phoenix", "philadelphia", "san antonio", "san diego", "dallas", "san jose",
+        "austin", "jacksonville", "san francisco", "seattle", "denver", "washington",
+        "washington dc", "boston", "nashville", "detroit", "portland", "las vegas",
+        "miami", "atlanta", "minneapolis", "tampa", "orlando", "brooklyn", "queens",
+        "manhattan", "toronto", "vancouver", "montreal", "london", "paris", "berlin",
+        "madrid", "barcelona", "rome", "amsterdam", "tokyo", "osaka", "seoul",
+        "singapore", "hong kong", "sydney", "melbourne", "mumbai", "delhi", "bangalore",
+        "bengaluru", "shanghai", "beijing", "shenzhen", "mexico city", "sao paulo",
+        "rio de janeiro", "buenos aires", "dubai", "istanbul", "cairo", "lagos",
+      ]);
+
+      function cleanLabel(value) {
+        return String(value || "")
+          .replace(/\s+County$/i, "")
+          .replace(/\s+Borough$/i, "")
+          .trim();
+      }
+
+      function isMajorCity(name) {
+        return MAJOR_CITIES.has(String(name || "").trim().toLowerCase());
+      }
+
+      try {
+        const ipRes = await fetch("https://ipwho.is/");
+        if (!ipRes.ok) return;
+        const ipData = await ipRes.json();
+        if (!ipData || !ipData.success) return;
+
+        const city = cleanLabel(ipData.city);
+        const lat = ipData.latitude;
+        const lon = ipData.longitude;
+
+        let label = city;
+
+        if (city && isMajorCity(city) && Number.isFinite(lat) && Number.isFinite(lon)) {
+          try {
+            const geoRes = await fetch(
+              `https://photon.komoot.io/reverse?lon=${encodeURIComponent(lon)}&lat=${encodeURIComponent(lat)}`
+            );
+            if (geoRes.ok) {
+              const geo = await geoRes.json();
+              const props = geo && geo.features && geo.features[0] && geo.features[0].properties;
+              if (props) {
+                const neighbourhood = cleanLabel(props.locality || props.district || props.suburb);
+                const county = cleanLabel(props.county);
+                if (neighbourhood && neighbourhood.toLowerCase() !== city.toLowerCase()) {
+                  label = neighbourhood;
+                } else if (county && county.toLowerCase() !== city.toLowerCase()) {
+                  label = county;
+                }
+              }
+            }
+          } catch (_) {
+            /* keep city */
+          }
+        }
+
+        if (label) placeEl.textContent = label;
+      } catch (_) {
+        /* keep fallback "there" */
+      }
+    })();
+
+    const unlock = () => {
+      playSafe(active);
+      window.removeEventListener("pointerdown", unlock, true);
+      window.removeEventListener("keydown", unlock, true);
+    };
+    window.addEventListener("pointerdown", unlock, true);
+    window.addEventListener("keydown", unlock, true);
+  </script>
+</body>
+</html>
