@@ -135,6 +135,18 @@
         );
     }
 
+    /* Idle/sleep — dim chrome, keep video full strength */
+    .stage.is-sleep .brand,
+    .stage.is-sleep .center,
+    .stage.is-sleep .socials,
+    .stage.is-sleep .pending-dot,
+    .stage.is-sleep .veil,
+    .stage.is-sleep .bg-toggle,
+    .stage.is-sleep .bg-panel {
+      opacity: 0.5;
+      transition: opacity 0.7s ease;
+    }
+
     .brand {
       position: absolute;
       top: clamp(1.1rem, 2.5vw, 1.65rem);
@@ -184,6 +196,24 @@
     }
 
     .greeting-line {
+      display: inline;
+    }
+
+    .greeting-sleep {
+      display: none;
+    }
+
+    .stage.is-sleep .greeting {
+      white-space: normal;
+      text-align: center;
+      max-width: min(92vw, 36rem);
+    }
+
+    .stage.is-sleep .greeting-home {
+      display: none;
+    }
+
+    .stage.is-sleep .greeting-sleep {
       display: inline;
     }
 
@@ -994,6 +1024,21 @@
         display: block;
       }
 
+      .greeting-home {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.12em;
+      }
+
+      .stage.is-sleep .greeting-home {
+        display: none;
+      }
+
+      .stage.is-sleep .greeting-sleep {
+        display: block;
+      }
+
       /* Skip entrance fades — avoids blink on mobile refresh */
       .brand,
       .greeting,
@@ -1307,7 +1352,9 @@
         class="video-layer is-active"
         id="videoA"
         muted
+        defaultMuted
         playsinline
+        webkit-playsinline
         autoplay
         preload="auto"
       ></video>
@@ -1315,8 +1362,10 @@
         class="video-layer"
         id="videoB"
         muted
+        defaultMuted
         playsinline
-        preload="none"
+        webkit-playsinline
+        preload="auto"
       ></video>
       <div class="video-blend" aria-hidden="true"></div>
     </div>
@@ -1357,8 +1406,11 @@
 
     <div class="center">
       <h1 class="greeting">
-        <span class="greeting-line">hi <span id="greetingPlace">there</span>, </span>
-        <span class="greeting-line">ready to chat <em>24/7</em></span>
+        <span class="greeting-home">
+          <span class="greeting-line">hi <span id="greetingPlace">there</span>, </span>
+          <span class="greeting-line">ready to chat <em>24/7</em></span>
+        </span>
+        <span class="greeting-sleep">I'll never leave a human on read...</span>
       </h1>
       <form class="prompt" id="promptForm" autocomplete="off">
         <div class="prompt-field" id="promptField">
@@ -1472,6 +1524,17 @@
     const SLEEP_VIDEOS = ["sleep.mp4", "sleep2.mp4"];
     const TYPING_VIDEO = "typing.mp4";
     const IDLE_SLEEP_MS = 30000;
+    const HOME_PLACEHOLDERS = [
+      "Ask me anything about my work at Salesforce...",
+      "Type a prompt or test my agentic skills...",
+      "What do you want to build together?",
+    ];
+    const SLEEP_PLACEHOLDERS = [
+      "Where is my octopus?",
+      "Did he text back?",
+      "Did Kraftwerk ever release a tracks for robots in love?",
+      "Should I reply now or wait 5 minutes to look cool?",
+    ];
     const MUSIC_BG = "#000000";
     const BG_STORAGE_KEY = "aura-video-blue-v2";
     const BG_DEFAULT = "#6eb3f5";
@@ -1526,6 +1589,23 @@
     let sleepIndex = 0;
     let typingMode = false;
     let idleTimer = 0;
+    let placeholderIndex = 0;
+
+    function placeholdersForMode() {
+      return sleepMode ? SLEEP_PLACEHOLDERS : HOME_PLACEHOLDERS;
+    }
+
+    function resetPlaceholderCycle() {
+      placeholderIndex = 0;
+      const ghost = document.getElementById("promptGhostText");
+      const input = document.getElementById("promptInput");
+      if (ghost && input && !input.value.trim()) ghost.textContent = "";
+    }
+
+    function setSleepUi(on) {
+      stage.classList.toggle("is-sleep", on);
+      resetPlaceholderCycle();
+    }
 
     function srcFor(i) {
       return VIDEOS[i];
@@ -1541,12 +1621,39 @@
       return options[Math.floor(Math.random() * options.length)];
     }
 
+    function prepareForAutoplay(el) {
+      if (!el) return;
+      el.muted = true;
+      el.defaultMuted = true;
+      el.volume = 0;
+      el.playsInline = true;
+      el.setAttribute("muted", "");
+      el.setAttribute("playsinline", "");
+      el.setAttribute("webkit-playsinline", "");
+      el.setAttribute("autoplay", "");
+    }
+
     async function playSafe(el) {
+      if (!el) return false;
+      prepareForAutoplay(el);
       try {
-        await el.play();
+        const playPromise = el.play();
+        if (playPromise !== undefined) await playPromise;
+        return !el.paused;
       } catch (_) {
-        /* autoplay may be blocked until first gesture */
+        /* Safari may block until muted+inline are set or first gesture */
+        return false;
       }
+    }
+
+    async function ensurePlaying(el) {
+      if (!el) return false;
+      if (!el.paused && !el.ended) return true;
+      if (await playSafe(el)) return true;
+      try {
+        await waitForCanPlay(el);
+      } catch (_) {}
+      return playSafe(el);
     }
 
     /** Drop decoder buffers so swapped-out clips don’t accumulate in memory */
@@ -1560,10 +1667,15 @@
     function loadInto(el, i) {
       const nextSrc = srcFor(i);
       const current = el.getAttribute("src") || "";
-      if (current === nextSrc) return false;
+      if (current === nextSrc) {
+        prepareForAutoplay(el);
+        return false;
+      }
       el.loop = false;
       el.src = nextSrc;
+      prepareForAutoplay(el);
       el.load();
+      prepareForAutoplay(el);
       return true;
     }
 
@@ -1765,6 +1877,7 @@
       if (musicMode || sleepMode || typingMode) return;
       sleepMode = true;
       sleepWakePending = false;
+      setSleepUi(true);
       clearIdleTimer();
       swapToken += 1;
       switching = false;
@@ -1785,6 +1898,7 @@
         await playSafe(active);
       } catch (_) {
         sleepMode = false;
+        setSleepUi(false);
         resetIdleTimer();
       }
     }
@@ -1798,6 +1912,7 @@
       if (!sleepMode) return;
       sleepMode = false;
       sleepWakePending = false;
+      setSleepUi(false);
       swapToken += 1;
       switching = false;
       preloadedIndex = null;
@@ -1821,6 +1936,7 @@
       if (sleepMode) {
         sleepMode = false;
         sleepWakePending = false;
+        setSleepUi(false);
       }
       typingMode = true;
       clearIdleTimer();
@@ -1914,6 +2030,7 @@
       if (sleepMode) {
         sleepMode = false;
         sleepWakePending = false;
+        setSleepUi(false);
       }
       if (typingMode) typingMode = false;
       clearIdleTimer();
@@ -2231,16 +2348,58 @@
       saveBgColor();
     });
 
-    /* Init with a random video — preload only near the end of each clip */
-    loadInto(active, index);
-    unloadVideo(inactive);
-    playSafe(active);
+    /* Init — Safari needs muted+playsinline set before play, and readyState wait */
+    prepareForAutoplay(videoA);
+    prepareForAutoplay(videoB);
+
+    async function startDefaultPlayback() {
+      if (musicMode || sleepMode || typingMode) return;
+      loadInto(active, index);
+      unloadVideo(inactive);
+      prepareForAutoplay(active);
+      try {
+        await waitForCanPlay(active);
+        if (musicMode || sleepMode || typingMode) return;
+        active.currentTime = 0;
+        await ensurePlaying(active);
+      } catch (_) {}
+
+      /* Safari sometimes needs a couple silent retries after first paint */
+      for (let i = 0; i < 4 && active.paused && !musicMode && !sleepMode && !typingMode; i++) {
+        await new Promise((r) => window.setTimeout(r, 180 * (i + 1)));
+        await playSafe(active);
+      }
+    }
+
+    startDefaultPlayback();
     resetIdleTimer();
 
     window.addEventListener("pointerdown", noteUserActivity, true);
     window.addEventListener("keydown", noteUserActivity, true);
+    window.addEventListener("touchstart", noteUserActivity, { capture: true, passive: true });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "visible") return;
+      if (musicMode || sleepMode || typingMode) return;
+      if (active.paused) playSafe(active);
+    });
+
+    window.addEventListener("pageshow", (e) => {
+      if (musicMode || sleepMode || typingMode) return;
+      if (e.persisted || active.paused) playSafe(active);
+    });
 
     [videoA, videoB].forEach((v) => {
+      v.addEventListener("loadeddata", () => {
+        if (v === active && v.paused && !musicMode && !sleepMode && !typingMode) {
+          playSafe(v);
+        }
+      });
+      v.addEventListener("canplay", () => {
+        if (v === active && v.paused && !musicMode && !sleepMode && !typingMode) {
+          playSafe(v);
+        }
+      });
       v.addEventListener("ended", () => {
         if (v === active) onEnded();
       });
@@ -2475,15 +2634,9 @@
       }, 420);
     });
 
-    /* Welcoming typewriter placeholder */
-    const PLACEHOLDERS = [
-      "Ask me anything about my work at Salesforce...",
-      "Type a prompt or test my agentic skills...",
-      "What do you want to build together?",
-    ];
+    /* Welcoming typewriter placeholder — sleep mode uses its own copy only while idle */
     const promptField = document.getElementById("promptField");
     const promptGhostText = document.getElementById("promptGhostText");
-    let placeholderIndex = 0;
     let pauseTypewriter = false;
     let typewriterRunning = false;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -2526,12 +2679,13 @@
           continue;
         }
 
-        const text = PLACEHOLDERS[placeholderIndex];
+        const list = placeholdersForMode();
+        const text = list[placeholderIndex % list.length];
 
         if (reduceMotion) {
           promptGhostText.textContent = text;
           await sleep(3200);
-          placeholderIndex = (placeholderIndex + 1) % PLACEHOLDERS.length;
+          placeholderIndex = (placeholderIndex + 1) % list.length;
           continue;
         }
 
@@ -2550,7 +2704,7 @@
         }
 
         await sleep(380);
-        placeholderIndex = (placeholderIndex + 1) % PLACEHOLDERS.length;
+        placeholderIndex = (placeholderIndex + 1) % placeholdersForMode().length;
       }
     }
 
@@ -2928,9 +3082,11 @@
       playSafe(active);
       window.removeEventListener("pointerdown", unlock, true);
       window.removeEventListener("keydown", unlock, true);
+      window.removeEventListener("touchstart", unlock, true);
     };
     window.addEventListener("pointerdown", unlock, true);
     window.addEventListener("keydown", unlock, true);
+    window.addEventListener("touchstart", unlock, { capture: true, passive: true });
   </script>
 </body>
 </html>
