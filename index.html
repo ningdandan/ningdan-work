@@ -2850,6 +2850,7 @@
     }
 
     const CHAT_SESSION_KEY = "ningdan-chat-session";
+    const CHAT_HISTORY_KEY = "ningdan-chat-history";
 
     function getChatSessionId() {
       try {
@@ -2862,6 +2863,35 @@
     function setChatSessionId(id) {
       try {
         if (id) sessionStorage.setItem(CHAT_SESSION_KEY, id);
+      } catch (_) {}
+    }
+
+    function getChatHistory() {
+      try {
+        const raw = sessionStorage.getItem(CHAT_HISTORY_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function setChatHistory(history) {
+      try {
+        sessionStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(history.slice(-16)));
+      } catch (_) {}
+    }
+
+    function pushChatHistory(role, content) {
+      const next = getChatHistory();
+      next.push({ role, content });
+      setChatHistory(next);
+    }
+
+    function clearChatHistory() {
+      try {
+        sessionStorage.removeItem(CHAT_HISTORY_KEY);
+        sessionStorage.removeItem(CHAT_SESSION_KEY);
       } catch (_) {}
     }
 
@@ -2889,6 +2919,7 @@
     }
 
     async function streamChatApi(message, action, handlers) {
+      const history = getChatHistory();
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -2899,6 +2930,7 @@
           sessionId: getChatSessionId(),
           message,
           action: action || null,
+          history,
         }),
       });
 
@@ -2950,6 +2982,8 @@
           } else if (payload.type === "done") {
             if (payload.sessionId) setChatSessionId(payload.sessionId);
             finalReply = payload.reply || finalReply;
+            pushChatHistory("user", message);
+            pushChatHistory("assistant", finalReply);
             if (handlers.onDone) handlers.onDone({ sessionId: payload.sessionId, reply: finalReply });
           } else if (payload.type === "error") {
             throw new Error(payload.error || "Chat failed");
@@ -3164,6 +3198,7 @@
     function openChat(seedText, action) {
       holdTypingForReply = true;
       chatOpen = true;
+      clearChatHistory();
       stage.classList.add("is-chat");
       chat.setAttribute("aria-hidden", "false");
       setChatBare(true);
@@ -3185,6 +3220,7 @@
       clearChatRevealState();
       holdTypingForReply = false;
       chatOpen = false;
+      clearChatHistory();
       stage.classList.remove("is-chat");
       chat.setAttribute("aria-hidden", "true");
       chatInput.value = "";

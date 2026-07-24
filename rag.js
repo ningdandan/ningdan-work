@@ -1,7 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 
-const KNOWLEDGE_DIR = path.join(__dirname, "knowledge");
+/* process.cwd() is more reliable on Vercel serverless than __dirname */
+const KNOWLEDGE_DIR = path.join(process.cwd(), "knowledge");
 
 function tokenize(text) {
   return String(text || "")

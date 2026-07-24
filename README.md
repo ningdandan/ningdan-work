@@ -1,10 +1,17 @@
 # ningdan.work
 
-## Chat (local)
+Static homepage + Claude chat API on **Vercel** (no local server required).
 
-1. Copy `.env.example` to `.env` and set `ANTHROPIC_API_KEY`
-2. `npm install`
-3. `npm start`
-4. Open http://localhost:3000
+## Deploy
 
-Sessions are stored in `data/chat.db` (gitignored). Knowledge lives in `knowledge/*.md`.
+1. Push this repo to GitHub and import it in [Vercel](https://vercel.com).
+2. In Project → Settings → Environment Variables, set:
+   - `ANTHROPIC_API_KEY` = your Anthropic key  
+   (Production + Preview)
+3. Redeploy.
+
+Chat hits `/api/chat` as a serverless function. Knowledge lives in `knowledge/*.md` (restart/redeploy after edits). Session history is kept in the browser (no SQLite).
+
+## Check
+
+After deploy, open `https://YOUR_DOMAIN/api/health` — you should see `{ "ok": true, "hasKey": true }`.
