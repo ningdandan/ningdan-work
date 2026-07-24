@@ -1,3 +1,13 @@
 .DS_Store
 .cursor/
 *.log
+node_modules/
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.db-journal
+backup/
+music2.mp4
+music22.mp4

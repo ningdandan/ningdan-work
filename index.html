@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.5/dist/purify.min.js"></script>
   <style>
     :root {
       --ink: #f7f3ec;
@@ -135,15 +137,26 @@
         );
     }
 
-    /* Idle/sleep — dim chrome, keep video full strength */
+    /* Idle/sleep — soft full-screen dim + quieter chrome */
+    .stage.is-sleep::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+      background: rgba(6, 10, 22, 0.36);
+      transition: opacity 0.7s ease;
+    }
+
     .stage.is-sleep .brand,
     .stage.is-sleep .center,
     .stage.is-sleep .socials,
+    .stage.is-sleep .footer-note,
     .stage.is-sleep .pending-dot,
     .stage.is-sleep .veil,
     .stage.is-sleep .bg-toggle,
     .stage.is-sleep .bg-panel {
-      opacity: 0.5;
+      opacity: 0.55;
       transition: opacity 0.7s ease;
     }
 
@@ -475,7 +488,7 @@
 
     .socials {
       position: absolute;
-      bottom: clamp(1.1rem, 3vw, 1.85rem);
+      bottom: clamp(2.6rem, 5.5vw, 3.4rem);
       left: 0;
       right: 0;
       z-index: 3;
@@ -631,6 +644,54 @@
       }
     }
 
+    .footer-note {
+      position: absolute;
+      left: 0.75rem;
+      right: 0.75rem;
+      bottom: calc(0.55rem + env(safe-area-inset-bottom, 0px));
+      z-index: 3;
+      margin: 0;
+      text-align: center;
+      font-family: var(--display);
+      font-size: clamp(0.62rem, 1.35vw, 0.72rem);
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      line-height: 1.35;
+      color: var(--ink);
+      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      animation: rise-in-footer 1s ease 1.05s forwards;
+      pointer-events: auto;
+    }
+
+    @keyframes rise-in-footer {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 0.8;
+        transform: translateY(0);
+      }
+    }
+
+    .footer-escalate {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 0.18em;
+      text-decoration-thickness: 1px;
+      white-space: nowrap;
+    }
+
+    .footer-escalate:hover {
+      color: var(--accent);
+    }
+
+    .footer-phone {
+      color: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+
     .pending-dot {
       position: absolute;
       top: clamp(1.4rem, 3vw, 2.2rem);
@@ -655,7 +716,8 @@
 
     /* —— Chat overlay —— */
     .stage.is-chat .center,
-    .stage.is-chat .socials {
+    .stage.is-chat .socials,
+    .stage.is-chat .footer-note {
       opacity: 0;
       pointer-events: none;
       visibility: hidden;
@@ -695,7 +757,9 @@
       pointer-events: auto;
       backdrop-filter: blur(28px) saturate(1.5);
       -webkit-backdrop-filter: blur(28px) saturate(1.5);
-      transition: background 0.2s ease, transform 0.2s ease;
+      transition: background 0.2s ease, transform 0.2s ease, opacity 0.35s ease;
+      opacity: 0;
+      visibility: hidden;
     }
 
     .chat-close:hover {
@@ -712,25 +776,94 @@
       stroke-linecap: round;
     }
 
+    @property --chat-blur {
+      syntax: "<length>";
+      inherits: false;
+      initial-value: 0px;
+    }
+
     .chat-panel {
+      --chat-blur: 0px;
       width: min(100%, 42rem);
       flex: 1;
       min-height: 0;
       display: flex;
       flex-direction: column;
       border-radius: 1.35rem;
-      border: 1px solid rgba(255, 255, 255, 0.7);
-      background: rgba(255, 255, 255, 0.45);
-      backdrop-filter: blur(72px) saturate(1.55);
-      -webkit-backdrop-filter: blur(72px) saturate(1.55);
-      box-shadow:
-        0 18px 48px rgba(60, 90, 130, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.85);
+      border: 1px solid transparent;
+      background: transparent;
+      backdrop-filter: blur(var(--chat-blur)) saturate(1.55);
+      -webkit-backdrop-filter: blur(var(--chat-blur)) saturate(1.55);
+      box-shadow: none;
       overflow: hidden;
       pointer-events: auto;
       color: #2a241c;
       letter-spacing: normal;
-      animation: chat-panel-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      transition:
+        --chat-blur 1.15s cubic-bezier(0.22, 1, 0.36, 1),
+        background 1.15s cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 1.15s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 1.15s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* First message: only bubbles — no chrome / borders / blur */
+    .chat.is-bare .chat-close,
+    .chat.is-bare .chat-composer {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition:
+        opacity 0.35s ease,
+        visibility 0.35s ease,
+        transform 0.35s ease;
+    }
+
+    .chat.is-bare .chat-panel {
+      --chat-blur: 0px;
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+      animation: none;
+      /* blur(0) still left saturate(1.55) active — kill the whole filter */
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    .chat.is-bare .chat-messages {
+      padding-top: clamp(2.5rem, 8vh, 4rem);
+    }
+
+    /* Streaming starts: restore frosted panel + chrome */
+    .chat.is-revealed .chat-close,
+    .chat.is-revealed .chat-composer {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+      transition:
+        opacity 1.2s ease 0.2s,
+        visibility 1.2s ease 0.2s,
+        transform 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.2s;
+    }
+
+    .chat.is-revealed .chat-panel {
+      --chat-blur: 72px;
+      background: rgba(255, 255, 255, 0.45);
+      border-color: rgba(255, 255, 255, 0.7);
+      box-shadow:
+        0 18px 48px rgba(60, 90, 130, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.85);
+      transition:
+        --chat-blur 1.6s cubic-bezier(0.22, 1, 0.36, 1),
+        background 1.6s cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 1.6s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 1.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .chat.is-revealed .chat-messages {
+      padding-top: 1.25rem;
+      transition: padding-top 1.2s ease;
     }
 
     .chat-messages {
@@ -762,12 +895,74 @@
       border-bottom-left-radius: 0.35rem;
     }
 
+    .chat-bubble.is-thinking {
+      opacity: 0.7;
+      font-style: italic;
+    }
+
     .chat-bubble.is-user {
       align-self: flex-end;
       background: rgba(255, 255, 255, 0.82);
       color: #2a241c;
       border: 1px solid rgba(255, 255, 255, 0.95);
       border-bottom-right-radius: 0.35rem;
+    }
+
+    .chat-bubble.is-md {
+      line-height: 1.45;
+    }
+
+    .chat-bubble.is-md p {
+      margin: 0 0 0.55em;
+    }
+
+    .chat-bubble.is-md p:last-child {
+      margin-bottom: 0;
+    }
+
+    .chat-bubble.is-md strong {
+      font-weight: 600;
+    }
+
+    .chat-bubble.is-md em {
+      font-style: italic;
+    }
+
+    .chat-bubble.is-md ul,
+    .chat-bubble.is-md ol {
+      margin: 0.35em 0 0.55em;
+      padding-left: 1.25em;
+    }
+
+    .chat-bubble.is-md li {
+      margin: 0.15em 0;
+    }
+
+    .chat-bubble.is-md a {
+      color: #b8432f;
+      text-decoration: underline;
+      text-underline-offset: 0.12em;
+    }
+
+    .chat-bubble.is-md code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.86em;
+      background: rgba(42, 36, 28, 0.08);
+      padding: 0.1em 0.35em;
+      border-radius: 0.3em;
+    }
+
+    .chat-bubble.is-md pre {
+      margin: 0.45em 0 0.55em;
+      padding: 0.65em 0.75em;
+      overflow-x: auto;
+      border-radius: 0.65em;
+      background: rgba(42, 36, 28, 0.08);
+    }
+
+    .chat-bubble.is-md pre code {
+      padding: 0;
+      background: none;
     }
 
     .chat-media-row {
@@ -870,7 +1065,15 @@
       align-items: center;
       gap: 0.55rem;
       padding: 0.75rem 0.85rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.45);
+      border-top: 1px solid transparent;
+      background: transparent;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .chat.is-revealed .chat-composer {
+      border-top-color: rgba(255, 255, 255, 0.45);
       background: rgba(255, 255, 255, 0.24);
     }
 
@@ -1044,18 +1247,29 @@
       .greeting,
       .prompt,
       .actions,
-      .socials {
+      .socials,
+      .footer-note {
         opacity: 1;
         animation: none;
       }
 
       .socials {
-        bottom: calc(2.25rem + env(safe-area-inset-bottom, 0px));
+        bottom: calc(3.35rem + env(safe-area-inset-bottom, 0px));
         z-index: 12;
         padding-bottom: 0.25rem;
         overflow: visible;
         flex-wrap: wrap;
         row-gap: 0.45rem;
+      }
+
+      .footer-note {
+        z-index: 12;
+        font-size: 0.6rem;
+        line-height: 1.4;
+        max-width: 92vw;
+        margin-inline: auto;
+        opacity: 0.8;
+        animation: none;
       }
 
       .socials a,
@@ -1145,11 +1359,16 @@
       .prompt,
       .actions,
       .socials,
+      .footer-note,
       .pending-dot,
       .chat-panel {
         animation: none !important;
         opacity: 1;
         transition: none;
+      }
+
+      .footer-note {
+        opacity: 0.8 !important;
       }
 
       .prompt::before,
@@ -1486,6 +1705,13 @@
       </div>
     </nav>
 
+    <p class="footer-note">
+      RAG Knowledge Base in progress, For complex inquiries,
+      <a class="footer-escalate" href="tel:+16286887325" title="Call 628-688-7325">
+      Escalate to Human <span class="footer-phone">628-688-7325</span>
+      </a>
+    </p>
+
     <div class="chat" id="chat" aria-hidden="true">
       <button type="button" class="chat-close" id="chatClose" aria-label="Close chat">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1588,6 +1814,7 @@
     let sleepWakePending = false;
     let sleepIndex = 0;
     let typingMode = false;
+    let holdTypingForReply = false;
     let idleTimer = 0;
     let placeholderIndex = 0;
 
@@ -1962,9 +2189,13 @@
       }
     }
 
-    async function exitTypingMode() {
+    async function exitTypingMode(options = {}) {
+      const force = Boolean(options && options.force);
       if (!typingMode) return;
+      if (!force && (chatOpen || holdTypingForReply)) return;
+
       typingMode = false;
+      holdTypingForReply = false;
       if (musicMode) return;
 
       swapToken += 1;
@@ -2410,7 +2641,7 @@
 
     stage.addEventListener("pointerdown", (e) => {
       if (chatOpen) return;
-      if (e.target.closest(".bg-panel, .bg-toggle, .actions, .prompt, .socials, .chat, .media-lightbox")) return;
+      if (e.target.closest(".bg-panel, .bg-toggle, .actions, .prompt, .socials, .footer-note, .chat, .media-lightbox")) return;
       onInteract();
     });
 
@@ -2453,25 +2684,114 @@
       "about/about me .mov",
     ];
 
-    const CHAT_REPLIES = {
-      cv: "Here’s a quick look at my path — Lead Product Designer at Salesforce, focused on agentic enterprise tools, self-service, and systems that help teams move faster. Want a PDF resume or a deeper walkthrough of a specific chapter?",
-      salesforce: "At Salesforce I’ve been designing agentic experiences across Service Cloud — self-service, workforce management, knowledge, and automation. Happy to dig into a product story, the design process, or how we ship AI that feels trustworthy.",
-      vibecoding: "Outside work I explore tangible craft, electronic music, VJing, and 3D experiments. Vibecoding is where I play with new tools and weird ideas. Curious about a specific one?",
-      about: [
-        "I’m Ningdan — UX designer based in Brooklyn. Half my time is agentic B2B SaaS; the other half is craft, music, and making strange little worlds.",
-        "I recently hosted my first art show in NYC, at NYU ITP! Here are pictures of my works:",
-      ],
-      default: "Hey — I’m Ningdan’s homepage agent. Ask about Salesforce work, vibecoding, or how I design. What are you curious about?",
-    };
-
     function mediaSrc(path) {
       return path.split("/").map(encodeURIComponent).join("/");
     }
 
-    function appendChatBubble(text, who) {
+    function renderMarkdown(text) {
+      const raw = String(text || "");
+      try {
+        if (window.marked && typeof window.marked.parse === "function") {
+          const html = window.marked.parse(raw, { breaks: true, gfm: true });
+          if (window.DOMPurify && typeof window.DOMPurify.sanitize === "function") {
+            return window.DOMPurify.sanitize(html, {
+              USE_PROFILES: { html: true },
+            });
+          }
+          return html;
+        }
+      } catch (_) {}
+      return raw
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\n/g, "<br>");
+    }
+
+    function markdownToPlain(text) {
+      return String(text || "")
+        .replace(/```[\s\S]*?```/g, (block) =>
+          block.replace(/```\w*\n?/g, "").replace(/```/g, "").trim()
+        )
+        .replace(/`([^`]+)`/g, "$1")
+        .replace(/\*\*([^*]+)\*\*/g, "$1")
+        .replace(/\*([^*]+)\*/g, "$1")
+        .replace(/__([^_]+)__/g, "$1")
+        .replace(/_([^_]+)_/g, "$1")
+        .replace(/^#{1,6}\s+/gm, "")
+        .replace(/^\s*>\s?/gm, "")
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1")
+        .replace(/^\s*[-*+]\s+/gm, "• ")
+        .replace(/^\s*\d+\.\s+/gm, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    }
+
+    /** Close unfinished markdown markers so partial streams still style cleanly */
+    function stabilizePartialMarkdown(text) {
+      let s = String(text || "");
+
+      const fenceCount = (s.match(/```/g) || []).length;
+      if (fenceCount % 2 === 1) s += "\n```";
+
+      const strippedFences = s.replace(/```[\s\S]*?```/g, "");
+      const inlineTicks = (strippedFences.match(/`/g) || []).length;
+      if (inlineTicks % 2 === 1) s += "`";
+
+      const boldCount = (strippedFences.replace(/`[^`]*`/g, "").match(/\*\*/g) || []).length;
+      if (boldCount % 2 === 1) s += "**";
+
+      let scratch = strippedFences.replace(/`[^`]*`/g, "").replace(/\*\*/g, "");
+      const italicCount = (scratch.match(/\*/g) || []).length;
+      if (italicCount % 2 === 1) s += "*";
+
+      const underscoreBold = (strippedFences.match(/__/g) || []).length;
+      if (underscoreBold % 2 === 1) s += "__";
+
+      scratch = strippedFences.replace(/__/g, "");
+      const underscoreItalic = (scratch.match(/_/g) || []).length;
+      if (underscoreItalic % 2 === 1) s += "_";
+
+      /* Incomplete [text](url patterns */
+      const openBracket = s.lastIndexOf("[");
+      const closeBracket = s.lastIndexOf("]");
+      const openParen = s.lastIndexOf("(");
+      const closeParen = s.lastIndexOf(")");
+      if (openBracket > closeBracket) {
+        /* leave as text — don't force-close mid-label */
+      } else if (closeBracket > openParen && openParen > closeParen) {
+        s += ")";
+      }
+
+      return s;
+    }
+
+    function setBubbleText(bubble, text) {
+      bubble.classList.remove("is-md");
+      bubble.textContent = text;
+    }
+
+    function setBubbleMarkdown(bubble, text) {
+      bubble.classList.add("is-md");
+      bubble.innerHTML = renderMarkdown(text);
+      bubble.querySelectorAll("a").forEach((link) => {
+        link.setAttribute("target", "_blank");
+        link.setAttribute("rel", "noopener noreferrer");
+      });
+    }
+
+    function setBubbleMarkdownLive(bubble, partialMd) {
+      setBubbleMarkdown(bubble, stabilizePartialMarkdown(partialMd));
+    }
+
+    function appendChatBubble(text, who, options = {}) {
       const bubble = document.createElement("div");
       bubble.className = `chat-bubble is-${who}`;
-      bubble.textContent = text;
+      if (who === "bot" && options.markdown) {
+        setBubbleMarkdown(bubble, text);
+      } else {
+        setBubbleText(bubble, text);
+      }
       chatMessages.appendChild(bubble);
       chatMessages.scrollTop = chatMessages.scrollHeight;
       return bubble;
@@ -2529,6 +2849,117 @@
       mediaLightboxVideo.load();
     }
 
+    const CHAT_SESSION_KEY = "ningdan-chat-session";
+
+    function getChatSessionId() {
+      try {
+        return sessionStorage.getItem(CHAT_SESSION_KEY) || null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function setChatSessionId(id) {
+      try {
+        if (id) sessionStorage.setItem(CHAT_SESSION_KEY, id);
+      } catch (_) {}
+    }
+
+    function appendThinkingBubble() {
+      const bubble = document.createElement("div");
+      bubble.className = "chat-bubble is-bot is-thinking";
+      bubble.textContent = "thinking…";
+      chatMessages.appendChild(bubble);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return bubble;
+    }
+
+    function setChatBare(on) {
+      chat.classList.toggle("is-bare", on);
+      chat.classList.toggle("is-revealed", !on);
+    }
+
+    function revealChatChrome() {
+      chat.classList.remove("is-bare");
+      chat.classList.add("is-revealed");
+    }
+
+    function clearChatRevealState() {
+      chat.classList.remove("is-bare", "is-revealed");
+    }
+
+    async function streamChatApi(message, action, handlers) {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify({
+          sessionId: getChatSessionId(),
+          message,
+          action: action || null,
+        }),
+      });
+
+      if (!res.ok) {
+        let errMsg = "Chat failed";
+        try {
+          const data = await res.json();
+          if (data && data.error) errMsg = data.error;
+        } catch (_) {}
+        throw new Error(errMsg);
+      }
+
+      if (!res.body) throw new Error("Streaming not supported");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finalReply = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let splitAt;
+        while ((splitAt = buffer.indexOf("\n\n")) !== -1) {
+          const rawEvent = buffer.slice(0, splitAt);
+          buffer = buffer.slice(splitAt + 2);
+
+          const dataLine = rawEvent
+            .split("\n")
+            .map((line) => line.trimEnd())
+            .find((line) => line.startsWith("data:"));
+          if (!dataLine) continue;
+
+          let payload;
+          try {
+            payload = JSON.parse(dataLine.replace(/^data:\s*/, ""));
+          } catch (_) {
+            continue;
+          }
+
+          if (payload.type === "meta") {
+            if (payload.sessionId) setChatSessionId(payload.sessionId);
+            if (handlers.onMeta) handlers.onMeta(payload);
+          } else if (payload.type === "token") {
+            finalReply += payload.text || "";
+            if (handlers.onToken) handlers.onToken(payload.text || "", finalReply);
+          } else if (payload.type === "done") {
+            if (payload.sessionId) setChatSessionId(payload.sessionId);
+            finalReply = payload.reply || finalReply;
+            if (handlers.onDone) handlers.onDone({ sessionId: payload.sessionId, reply: finalReply });
+          } else if (payload.type === "error") {
+            throw new Error(payload.error || "Chat failed");
+          }
+        }
+      }
+
+      return { reply: finalReply };
+    }
+
     function resolveChatAction(seed, action) {
       if (action) return action;
       const lower = (seed || "").toLowerCase();
@@ -2536,42 +2967,210 @@
       if (lower.includes("salesforce") || lower.includes("agentic")) return "salesforce";
       if (lower.includes("vibecod") || lower.includes("side") || lower.includes("project")) return "vibecoding";
       if (lower.includes("about")) return "about";
-      return "default";
+      return null;
     }
 
-    function botReplyFor(seed, action) {
-      const key = resolveChatAction(seed, action);
-      const reply = CHAT_REPLIES[key] || CHAT_REPLIES.default;
-      return reply;
-    }
+    const CHROME_REVEAL_MS = 1600;
+    const TYPE_MS_PER_CHAR = 25;
+    const TYPE_MS_MIN = 16;
+    const TYPE_MS_MAX = 48;
 
-    function deliverBotReply(seed, action) {
-      const key = resolveChatAction(seed, action);
-      const reply = botReplyFor(seed, action);
+    function createPacedTypewriter(bubble, { syncChromeMs = 0, onRevealNearEnd } = {}) {
+      let mdTarget = "";
+      let shown = 0;
+      let receivingDone = false;
+      let started = false;
+      let chromeRevealed = false;
+      let timer = 0;
+      let startMs = 0;
+      let minDurationMs = 0;
+      let resolveAll;
+      const donePromise = new Promise((resolve) => {
+        resolveAll = resolve;
+      });
 
-      if (Array.isArray(reply)) {
-        reply.forEach((line, i) => {
-          window.setTimeout(() => {
-            appendChatBubble(line, "bot");
-            if (key === "about" && i === reply.length - 1) {
-              appendAboutMediaRow();
-            }
-            chatInput.focus();
-          }, 280 + i * 420);
-        });
-        return;
+      function delayForNext() {
+        const remaining = Math.max(1, mdTarget.length - shown);
+        if (receivingDone && minDurationMs > 0 && startMs) {
+          const elapsed = performance.now() - startMs;
+          const timeLeft = Math.max(0, minDurationMs - elapsed);
+          if (timeLeft <= 0) return TYPE_MS_MIN;
+          return Math.min(TYPE_MS_MAX, Math.max(TYPE_MS_MIN, timeLeft / remaining));
+        }
+        return TYPE_MS_PER_CHAR;
       }
 
-      appendChatBubble(reply, "bot");
-      if (key === "about") appendAboutMediaRow();
+      function maybeRevealNearEnd() {
+        if (chromeRevealed || !syncChromeMs || typeof onRevealNearEnd !== "function") return;
+        if (!receivingDone || !startMs || !minDurationMs) return;
+
+        const elapsed = performance.now() - startMs;
+        const timeLeft = minDurationMs - elapsed;
+
+        if (timeLeft <= syncChromeMs) {
+          chromeRevealed = true;
+          onRevealNearEnd();
+        }
+      }
+
+      function paint() {
+        setBubbleMarkdownLive(bubble, mdTarget.slice(0, shown));
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function complete() {
+        if (!chromeRevealed && syncChromeMs && typeof onRevealNearEnd === "function") {
+          chromeRevealed = true;
+          onRevealNearEnd();
+        }
+        shown = mdTarget.length;
+        setBubbleMarkdown(bubble, mdTarget);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        resolveAll(mdTarget);
+      }
+
+      function tick() {
+        timer = 0;
+        if (shown < mdTarget.length) {
+          if (!started) {
+            started = true;
+            startMs = performance.now();
+          }
+          shown += 1;
+          paint();
+          maybeRevealNearEnd();
+          timer = window.setTimeout(tick, delayForNext());
+          return;
+        }
+
+        if (!receivingDone) {
+          timer = window.setTimeout(tick, 48);
+          return;
+        }
+
+        maybeRevealNearEnd();
+
+        if (minDurationMs > 0 && startMs) {
+          const wait = Math.max(0, minDurationMs - (performance.now() - startMs));
+          if (wait > 0) {
+            if (!chromeRevealed && syncChromeMs && typeof onRevealNearEnd === "function") {
+              chromeRevealed = true;
+              onRevealNearEnd();
+            }
+            timer = window.setTimeout(() => {
+              timer = 0;
+              complete();
+            }, wait);
+            return;
+          }
+        }
+        complete();
+      }
+
+      function kick() {
+        if (!timer) timer = window.setTimeout(tick, started ? delayForNext() : TYPE_MS_PER_CHAR);
+      }
+
+      return {
+        push(fullText) {
+          mdTarget = String(fullText || "");
+          if (shown > mdTarget.length) shown = mdTarget.length;
+          kick();
+        },
+        finish(finalText) {
+          if (finalText != null) mdTarget = String(finalText);
+          if (shown > mdTarget.length) shown = mdTarget.length;
+          receivingDone = true;
+          const natural = Math.max(1, mdTarget.length) * TYPE_MS_PER_CHAR;
+          minDurationMs =
+            syncChromeMs > 0
+              ? Math.max(natural, syncChromeMs * 2.35, syncChromeMs + 1100)
+              : 0;
+          kick();
+          return donePromise;
+        },
+        cancel() {
+          if (timer) window.clearTimeout(timer);
+          timer = 0;
+          resolveAll(mdTarget);
+        },
+      };
+    }
+
+    async function deliverBotReply(seed, action) {
+      const key = resolveChatAction(seed, action);
+      const message = (seed || "").trim() || "hi";
+      const thinking = appendThinkingBubble();
+      let bubble = null;
+      let typer = null;
+      let typePromise = Promise.resolve();
+      const shouldRevealOnStream = chat.classList.contains("is-bare");
+
+      try {
+        await streamChatApi(message, key, {
+          onToken(_text, full) {
+            if (!typer) {
+              thinking.remove();
+              bubble = appendChatBubble("", "bot");
+              typer = createPacedTypewriter(bubble, {
+                syncChromeMs: shouldRevealOnStream ? CHROME_REVEAL_MS : 0,
+                onRevealNearEnd() {
+                  if (shouldRevealOnStream) revealChatChrome();
+                },
+              });
+            }
+            typer.push(full);
+          },
+          onDone({ reply }) {
+            const finalText = reply || "Hey — ask me anything.";
+            if (!typer) {
+              thinking.remove();
+              bubble = appendChatBubble("", "bot");
+              typer = createPacedTypewriter(bubble, {
+                syncChromeMs: shouldRevealOnStream ? CHROME_REVEAL_MS : 0,
+                onRevealNearEnd() {
+                  if (shouldRevealOnStream) revealChatChrome();
+                },
+              });
+              typer.push(finalText);
+            }
+            typePromise = typer.finish(finalText);
+          },
+        });
+
+        await typePromise;
+
+        if (key === "about") appendAboutMediaRow();
+      } catch (_) {
+        if (typer) typer.cancel();
+        thinking.remove();
+        if (!bubble) {
+          appendChatBubble(
+            "I couldn’t reach the knowledge base just now. Try again, or escalate to human at 628-688-7325.",
+            "bot"
+          );
+        }
+        if (shouldRevealOnStream) revealChatChrome();
+      }
+
+      /* First reply finished — release typing.mp4 hold */
+      if (shouldRevealOnStream) {
+        holdTypingForReply = false;
+        exitTypingMode({ force: true });
+      }
       chatInput.focus();
     }
 
     function openChat(seedText, action) {
+      holdTypingForReply = true;
       chatOpen = true;
       stage.classList.add("is-chat");
       chat.setAttribute("aria-hidden", "false");
+      setChatBare(true);
       chatMessages.innerHTML = "";
+
+      /* Keep typing.mp4 if already playing; otherwise start it for the first reply */
+      if (!typingMode) enterTypingMode();
 
       const userText = (seedText || "").trim();
       if (userText) appendChatBubble(userText, "user");
@@ -2583,11 +3182,14 @@
 
     function closeChat() {
       closeMediaLightbox();
+      clearChatRevealState();
+      holdTypingForReply = false;
       chatOpen = false;
       stage.classList.remove("is-chat");
       chat.setAttribute("aria-hidden", "true");
       chatInput.value = "";
       chatMessages.innerHTML = "";
+      exitTypingMode({ force: true });
     }
 
     chatClose.addEventListener("click", (e) => {
@@ -2616,12 +3218,32 @@
     promptForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const q = promptInput.value.trim();
-      if (!q) return;
-      exitTypingMode();
+      if (!q) {
+        holdTypingForReply = false;
+        return;
+      }
+      holdTypingForReply = true;
       openChat(q, null);
       promptInput.value = "";
       if (typeof syncGhostVisibility === "function") syncGhostVisibility();
     });
+
+    promptInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && promptInput.value.trim()) holdTypingForReply = true;
+    });
+
+    promptForm.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (
+          e.target.closest('button[type="submit"]') &&
+          promptInput.value.trim()
+        ) {
+          holdTypingForReply = true;
+        }
+      },
+      true
+    );
 
     chatForm.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -2629,9 +3251,7 @@
       if (!q) return;
       appendChatBubble(q, "user");
       chatInput.value = "";
-      window.setTimeout(() => {
-        deliverBotReply(q, null);
-      }, 420);
+      deliverBotReply(q, null);
     });
 
     /* Welcoming typewriter placeholder — sleep mode uses its own copy only while idle */
@@ -2715,10 +3335,12 @@
     promptInput.addEventListener("focus", syncGhostVisibility);
     promptInput.addEventListener("blur", () => {
       syncGhostVisibility();
+      if (chatOpen || holdTypingForReply) return;
       exitTypingMode();
     });
     promptForm.addEventListener("focusout", (e) => {
       if (promptForm.contains(e.relatedTarget)) return;
+      if (chatOpen || holdTypingForReply) return;
       exitTypingMode();
     });
     syncGhostVisibility();
